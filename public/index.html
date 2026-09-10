@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tug of War: Mathematics - 2 Player Multiplayer</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Canvas Confetti & Socket.io CDN fallback + local -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- QRCode generator library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top App Navbar -->
+  <header class="app-header">
+    <div class="header-logo">
+      <span class="logo-icon">🪢</span>
+      <h1 class="header-title">TUG OF WAR: <span class="highlight">MATHEMATICS</span></h1>
+    </div>
+    <div class="header-controls">
+      <div class="status-badge" id="network-status">
+        <span class="status-dot"></span>
+        <span id="status-text">Connected</span>
+      </div>
+      <button class="icon-btn" id="btn-sound" title="Toggle Sound">🔊</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- ================= VIEW 1: LOBBY (Create / Join) ================= -->
+    <section id="view-lobby" class="view-screen active">
+      <div class="lobby-grid">
+        
+        <!-- Create Room Box -->
+        <div class="glass-card lobby-card">
+          <div class="card-badge">HOST A GAME</div>
+          <h2>Create Room</h2>
+          <p class="subtitle">Set up a math duel for 2 players</p>
+
+          <form id="form-create-room" class="lobby-form">
+            <div class="form-group">
+              <label>Math Operations</label>
+              <select id="create-operation" class="custom-select">
+                <option value="mixed">Mixed (+, -, ×, ÷)</option>
+                <option value="add">Addition (+)</option>
+                <option value="sub">Subtraction (-)</option>
+                <option value="mul">Multiplication (×)</option>
+                <option value="div">Division (÷)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Difficulty</label>
+              <select id="create-difficulty" class="custom-select">
+                <option value="easy">Easy (Numbers 1 - 10)</option>
+                <option value="medium" selected>Medium (Numbers 1 - 20)</option>
+                <option value="hard">Hard (Speed Math 1 - 50)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Game Duration</label>
+              <select id="create-duration" class="custom-select">
+                <option value="30">30 Seconds (Quick Duel)</option>
+                <option value="60" selected>60 Seconds (Standard)</option>
+                <option value="90">90 Seconds (Long Battle)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Select Host Role</label>
+              <input type="hidden" id="create-host-mode-val" value="player">
+              <div class="mode-toggle-group">
+                <button type="button" class="mode-card active" id="btn-mode-player">
+                  <span class="mode-icon">🎮</span>
+                  <div class="mode-text">
+                    <strong>Play as Team 1</strong>
+                    <small>Host plays on this device</small>
+                  </div>
+                </button>
+                <button type="button" class="mode-card" id="btn-mode-spectator">
+                  <span class="mode-icon">📺</span>
+                  <div class="mode-text">
+                    <strong>Laptop Live Screen</strong>
+                    <small>Big display for 2 phones</small>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              <span>🚀 Create Room</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Join Room Box -->
+        <div class="glass-card lobby-card highlight-border">
+          <div class="card-badge badge-join">JOIN GAME</div>
+          <h2>Join Room</h2>
+          <p class="subtitle">Play on your own device with a room code</p>
+
+          <form id="form-join-room" class="lobby-form">
+            <div class="form-group">
+              <label>Enter 4-Letter Room Code</label>
+              <input type="text" id="join-code-input" maxlength="4" placeholder="e.g. MATH" class="code-input" autocomplete="off" spellcheck="false" required>
+            </div>
+
+            <div class="join-btn-group">
+              <button type="submit" class="btn btn-secondary btn-block">
+                <span>🎮 Join as Player</span>
+              </button>
+              <button type="button" id="btn-join-spectator" class="btn btn-outline btn-block">
+                <span>📺 Open Live Display Screen</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="lobby-divider"><span>OR</span></div>
+          <p class="info-tip">💡 Perfect for classroom/laptop display! Host opens live screen on laptop, players join on phones.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: WAITING ROOM ================= -->
+    <section id="view-waiting" class="view-screen">
+      <div class="glass-card waiting-card">
+        <h2>Lobby - Waiting for Players</h2>
+        
+        <div class="room-code-display">
+          <span class="label">ROOM CODE</span>
+          <div class="code-box">
+            <span id="display-room-code">----</span>
+            <button class="btn-copy" id="btn-copy-code" title="Copy Code">📋</button>
+          </div>
+        </div>
+
+        <!-- Network Info & QR Code -->
+        <div class="network-info-box">
+          <div class="qr-container" id="qrcode-box"></div>
+          <div class="network-text">
+            <p><strong>Mobile / Other Device Join:</strong></p>
+            <p class="url-text" id="display-network-url">http://localhost:3000</p>
+            <small>Scan QR code or type the URL on second phone/tablet</small>
+          </div>
+        </div>
+
+        <!-- Players List -->
+        <div class="players-status">
+          <div class="player-slot slot-blue" id="slot-p1">
+            <div class="slot-avatar">🟦</div>
+            <div class="slot-info">
+              <span class="p-name">Team 1 (Blue)</span>
+              <span class="p-status ready">HOST CONNECTED</span>
+            </div>
+          </div>
+
+          <div class="vs-circle">VS</div>
+
+          <div class="player-slot slot-red" id="slot-p2">
+            <div class="slot-avatar">🟥</div>
+            <div class="slot-info">
+              <span class="p-name" id="p2-name-label">Team 2 (Red)</span>
+              <span class="p-status waiting" id="p2-status-label">Waiting for player...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Start Controls -->
+        <div class="waiting-actions">
+          <button id="btn-start-game" class="btn btn-primary btn-xl" disabled>
+            ▶ START GAME
+          </button>
+          <button id="btn-leave-room" class="btn btn-outline">Leave Lobby</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: LIVE GAME ARENA ================= -->
+    <section id="view-game" class="view-screen">
+      
+      <!-- Top Arena Header -->
+      <div class="game-header-bar">
+        <div class="team-score-badge p1-badge">
+          <span class="team-title">Team 1</span>
+          <span class="score-val" id="top-score-p1">0</span>
+        </div>
+
+        <div class="header-center-info">
+          <div class="timer-box">
+            <span class="timer-icon">⏱️</span>
+            <span class="timer-val" id="game-timer">00:60</span>
+          </div>
+          <div class="game-room-badge">
+            <span class="badge-icon">🔑</span> ROOM: <strong id="playing-room-code">----</strong>
+          </div>
+        </div>
+
+        <div class="team-score-badge p2-badge">
+          <span class="team-title">Team 2</span>
+          <span class="score-val" id="top-score-p2">0</span>
+        </div>
+      </div>
+
+      <!-- Main Game Arena Grid: Team 1 Card | Center Tug Canvas | Team 2 Card -->
+      <div class="arena-grid">
+        
+        <!-- TEAM 1 CARD (BLUE) -->
+        <div class="player-card team-blue-card" id="card-player-1">
+          <div class="card-top-bar">
+            <span class="card-team-label">Team 1</span>
+            <span class="card-score-pill" id="score-pill-p1">0</span>
+          </div>
+
+          <!-- Problem Box -->
+          <div class="math-problem-box">
+            <div class="problem-text" id="q-text-p1">2 × 10 = ?</div>
+          </div>
+
+          <!-- Answer Display -->
+          <div class="answer-display-box" id="ans-box-p1">
+            <span class="ans-value" id="ans-val-p1"></span>
+            <span class="cursor-blink"></span>
+          </div>
+
+          <!-- Combo Indicator -->
+          <div class="combo-indicator" id="combo-p1">COMBO x2!</div>
+
+          <!-- Keypad (Team 1) -->
+          <div class="keypad-grid" id="keypad-p1">
+            <button class="key-btn" data-val="1">1</button>
+            <button class="key-btn" data-val="2">2</button>
+            <button class="key-btn" data-val="3">3</button>
+            <button class="key-btn" data-val="4">4</button>
+            <button class="key-btn" data-val="5">5</button>
+            <button class="key-btn" data-val="6">6</button>
+            <button class="key-btn" data-val="7">7</button>
+            <button class="key-btn" data-val="8">8</button>
+            <button class="key-btn" data-val="9">9</button>
+            <button class="key-btn key-action key-clear" data-val="clear" title="Clear">✖</button>
+            <button class="key-btn" data-val="0">0</button>
+            <button class="key-btn key-action key-submit" data-val="submit" title="Submit">✓</button>
+          </div>
+        </div>
+
+        <!-- CENTER TUG OF WAR ARENA -->
+        <div class="tug-arena-card">
+          <div class="arena-top-info">
+            <span id="arena-status-text">PULL THE ROPE TO WIN!</span>
+          </div>
+
+          <!-- Tug Canvas / SVG Illustration -->
+          <div class="tug-visual-container">
+            <!-- Background Dotted Center Boundary -->
+            <div class="center-line"></div>
+            
+            <svg id="tug-svg" viewBox="0 0 800 350" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <!-- Shadows & Gradients -->
+                <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.3"/>
+                </filter>
+                <linearGradient id="rope-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#b5835a"/>
+                  <stop offset="50%" stop-color="#d4a373"/>
+                  <stop offset="100%" stop-color="#b5835a"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Ground platform & Prominent Center Boundary Line -->
+              <rect x="20" y="270" width="760" height="20" rx="10" fill="rgba(255,255,255,0.15)"/>
+              
+              <!-- Bright Vertical Center Boundary Line (Thread Alignment Line) -->
+              <line x1="400" y1="40" x2="400" y2="280" stroke="#f1c40f" stroke-width="3" stroke-dasharray="10,6" opacity="0.8"/>
+
+              <!-- Dynamic Group that moves left or right according to rope position -->
+              <g id="tug-dynamic-group" transform="translate(0, 0)">
+                
+                <!-- SOLID BOLD VISIBLE HEMP ROPE (PULL THREAD) -->
+                <!-- Layer 1: Outer Dark Border/Shadow -->
+                <line x1="40" y1="200" x2="760" y2="200" stroke="#5c3d1e" stroke-width="20" stroke-linecap="round"/>
+                <!-- Layer 2: Main Golden Hemp Rope Body -->
+                <line x1="40" y1="200" x2="760" y2="200" stroke="#d4a373" stroke-width="14" stroke-linecap="round"/>
+                <!-- Layer 3: Inner Braided Texture Thread -->
+                <line x1="40" y1="200" x2="760" y2="200" stroke="#faedcd" stroke-width="5" stroke-dasharray="14,8" stroke-linecap="round"/>
+                <line x1="40" y1="200" x2="760" y2="200" stroke="#bc6c25" stroke-width="3" stroke-dasharray="8,14" stroke-linecap="round"/>
+                
+                <!-- REALISTIC FABRIC RED THREAD & RIBBON MARKER -->
+                <g id="center-flag" transform="translate(400, 200)">
+                  <!-- Ribbon Knot Wrapped Around Rope -->
+                  <rect x="-12" y="-14" width="24" height="28" rx="5" fill="#e74c3c" stroke="#b71c1c" stroke-width="2.5" filter="url(#drop-shadow)"/>
+                  <rect x="-7" y="-10" width="14" height="20" rx="3" fill="#ff5252"/>
+                  <!-- Rope Wrap Threads -->
+                  <line x1="-12" y1="-4" x2="12" y2="-4" stroke="#d32f2f" stroke-width="2"/>
+                  <line x1="-12" y1="4" x2="12" y2="4" stroke="#d32f2f" stroke-width="2"/>
+
+                  <!-- Left Wavy Thread / Ribbon Tail -->
+                  <path d="M -5,12 C -12,35 -2,58 -8,78" stroke="#d32f2f" stroke-width="7" stroke-linecap="round" fill="none" filter="url(#drop-shadow)"/>
+                  <path d="M -5,12 C -12,35 -2,58 -8,78" stroke="#ff5252" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <polygon points="-8,78 -16,92 -2,88" fill="#d32f2f"/>
+
+                  <!-- Right Wavy Thread / Ribbon Tail -->
+                  <path d="M 5,12 C 12,35 2,58 8,78" stroke="#b71c1c" stroke-width="7" stroke-linecap="round" fill="none" filter="url(#drop-shadow)"/>
+                  <path d="M 5,12 C 12,35 2,58 8,78" stroke="#ff7979" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <polygon points="8,78 2,88 16,92" fill="#b71c1c"/>
+
+                  <!-- Center Pointer Marker Ring -->
+                  <circle cx="0" cy="85" r="6" fill="#f1c40f" stroke="#ffffff" stroke-width="2" filter="url(#drop-shadow)"/>
+                </g>
+
+                <!-- TEAM 1 PLAYERS (LEFT - BLUE) -->
+                <g id="team1-graphics" transform="translate(100, 140)">
+                  <!-- Player 1 Puller -->
+                  <g class="character p1-char1" transform="translate(0, 0)">
+                    <!-- Body -->
+                    <rect x="20" y="45" width="30" height="40" rx="8" fill="#2980b9"/>
+                    <!-- Head & Hat -->
+                    <circle cx="35" cy="30" r="16" fill="#f39c12"/>
+                    <rect x="23" y="12" width="24" height="6" rx="3" fill="#1b4f72"/>
+                    <!-- Arms pulling -->
+                    <path d="M 35,50 L 60,60" stroke="#f39c12" stroke-width="8" stroke-linecap="round"/>
+                    <!-- Legs -->
+                    <path d="M 25,85 L 15,115 M 40,85 L 50,115" stroke="#1b4f72" stroke-width="8" stroke-linecap="round"/>
+                  </g>
+
+                  <!-- Player 2 Puller -->
+                  <g class="character p1-char2" transform="translate(-50, 5)">
+                    <rect x="20" y="45" width="30" height="40" rx="8" fill="#3498db"/>
+                    <circle cx="35" cy="30" r="16" fill="#f39c12"/>
+                    <rect x="23" y="12" width="24" height="6" rx="3" fill="#1b4f72"/>
+                    <path d="M 35,50 L 60,55" stroke="#f39c12" stroke-width="8" stroke-linecap="round"/>
+                    <path d="M 25,85 L 10,115 M 40,85 L 45,115" stroke="#1b4f72" stroke-width="8" stroke-linecap="round"/>
+                  </g>
+                </g>
+
+                <!-- TEAM 2 PLAYERS (RIGHT - RED) -->
+                <g id="team2-graphics" transform="translate(700, 140) scale(-1, 1)">
+                  <!-- Player 1 Puller -->
+                  <g class="character p2-char1" transform="translate(0, 0)">
+                    <rect x="20" y="45" width="30" height="40" rx="8" fill="#c0392b"/>
+                    <circle cx="35" cy="30" r="16" fill="#f39c12"/>
+                    <rect x="23" y="12" width="24" height="6" rx="3" fill="#641e16"/>
+                    <path d="M 35,50 L 60,60" stroke="#f39c12" stroke-width="8" stroke-linecap="round"/>
+                    <path d="M 25,85 L 15,115 M 40,85 L 50,115" stroke="#641e16" stroke-width="8" stroke-linecap="round"/>
+                  </g>
+
+                  <!-- Player 2 Puller -->
+                  <g class="character p2-char2" transform="translate(-50, 5)">
+                    <rect x="20" y="45" width="30" height="40" rx="8" fill="#e74c3c"/>
+                    <circle cx="35" cy="30" r="16" fill="#f39c12"/>
+                    <rect x="23" y="12" width="24" height="6" rx="3" fill="#641e16"/>
+                    <path d="M 35,50 L 60,55" stroke="#f39c12" stroke-width="8" stroke-linecap="round"/>
+                    <path d="M 25,85 L 10,115 M 40,85 L 45,115" stroke="#641e16" stroke-width="8" stroke-linecap="round"/>
+                  </g>
+                </g>
+
+              </g>
+            </svg>
+          </div>
+
+          <div class="rope-meter-bar">
+            <div class="meter-fill-p1" id="meter-p1" style="width: 50%;"></div>
+            <div class="meter-marker"></div>
+            <div class="meter-fill-p2" id="meter-p2" style="width: 50%;"></div>
+          </div>
+        </div>
+
+        <!-- TEAM 2 CARD (RED) -->
+        <div class="player-card team-red-card" id="card-player-2">
+          <div class="card-top-bar">
+            <span class="card-team-label">Team 2</span>
+            <span class="card-score-pill" id="score-pill-p2">0</span>
+          </div>
+
+          <!-- Problem Box -->
+          <div class="math-problem-box">
+            <div class="problem-text" id="q-text-p2">8 × 10 = ?</div>
+          </div>
+
+          <!-- Answer Display -->
+          <div class="answer-display-box" id="ans-box-p2">
+            <span class="ans-value" id="ans-val-p2"></span>
+            <span class="cursor-blink"></span>
+          </div>
+
+          <!-- Combo Indicator -->
+          <div class="combo-indicator" id="combo-p2">COMBO x2!</div>
+
+          <!-- Keypad (Team 2) -->
+          <div class="keypad-grid" id="keypad-p2">
+            <button class="key-btn" data-val="1">1</button>
+            <button class="key-btn" data-val="2">2</button>
+            <button class="key-btn" data-val="3">3</button>
+            <button class="key-btn" data-val="4">4</button>
+            <button class="key-btn" data-val="5">5</button>
+            <button class="key-btn" data-val="6">6</button>
+            <button class="key-btn" data-val="7">7</button>
+            <button class="key-btn" data-val="8">8</button>
+            <button class="key-btn" data-val="9">9</button>
+            <button class="key-btn key-action key-clear" data-val="clear" title="Clear">✖</button>
+            <button class="key-btn" data-val="0">0</button>
+            <button class="key-btn key-action key-submit" data-val="submit" title="Submit">✓</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 4: GAME OVER / VICTORY OVERLAY ================= -->
+    <div id="modal-game-over" class="modal-overlay">
+      <div class="glass-card modal-card animate-pop">
+        <div class="victory-icon" id="victory-emoji">🏆</div>
+        <h2 id="victory-title">TEAM 1 WINS!</h2>
+        <p class="subtitle" id="victory-reason">Outpulled opponent in Tug of War!</p>
+
+        <div class="stats-grid">
+          <div class="stat-box p1-stat">
+            <h4>Team 1 (Blue)</h4>
+            <p>Score: <strong id="stat-score-p1">0</strong></p>
+            <p>Accuracy: <strong id="stat-acc-p1">0%</strong></p>
+            <p>Max Combo: <strong id="stat-combo-p1">0</strong></p>
+          </div>
+
+          <div class="stat-box p2-stat">
+            <h4>Team 2 (Red)</h4>
+            <p>Score: <strong id="stat-score-p2">0</strong></p>
+            <p>Accuracy: <strong id="stat-acc-p2">0%</strong></p>
+            <p>Max Combo: <strong id="stat-combo-p2">0</strong></p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-play-again" class="btn btn-primary btn-block">🔄 Play Again</button>
+          <button id="btn-modal-lobby" class="btn btn-outline btn-block">🚪 Main Menu</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Sound Audio Engine JS Script & App JS -->
+  <script src="app.js"></script>
+</body>
+</html>
