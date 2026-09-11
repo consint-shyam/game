@@ -1029,26 +1029,31 @@ function setupDeviceCards() {
   const card1 = document.getElementById('card-player-1');
   const card2 = document.getElementById('card-player-2');
   const arenaGrid = document.querySelector('.arena-grid');
+  if (!card1 || !card2 || !arenaGrid) return;
 
   if (playerNum === 0) {
-    // Spectator / Live Display Mode
-    document.getElementById('arena-status-text').textContent = '📺 LIVE LAPTOP DISPLAY - WATCH THE DUEL!';
+    // Spectator / Live Display Mode: show both cards
+    document.getElementById('arena-status-text').textContent = '📺 LIVE DISPLAY SCREEN - WATCH THE DUEL!';
     arenaGrid.classList.add('show-dual');
     card1.classList.add('active-device-card');
     card2.classList.add('active-device-card');
-  } else if (window.innerWidth <= 992) {
-    // Mobile device: show active player card only
+  } else if (window.innerWidth <= 1100) {
+    // Mobile/tablet device: show only the active player card
+    arenaGrid.classList.remove('show-dual');
     card1.classList.remove('active-device-card');
     card2.classList.remove('active-device-card');
 
-    if (playerNum === 1) {
-      card1.classList.add('active-device-card');
-    } else {
+    if (playerNum === 2) {
       card2.classList.add('active-device-card');
+    } else {
+      // Default to Team 1 for Player 1 or host
+      card1.classList.add('active-device-card');
     }
   } else {
-    // Desktop layout: show both cards
+    // Desktop layout: show both cards side-by-side
     arenaGrid.classList.add('show-dual');
+    card1.classList.add('active-device-card');
+    card2.classList.add('active-device-card');
   }
 }
 
@@ -1103,6 +1108,9 @@ function updateRopePosition(ropePos) {
 
 // UI Event Listeners
 function setupEventListeners() {
+  // Dynamic Window Resize Listener
+  window.addEventListener('resize', setupDeviceCards);
+
   // Sound Toggle
   document.getElementById('btn-sound').addEventListener('click', () => {
     initAudio();
