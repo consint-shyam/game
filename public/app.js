@@ -548,13 +548,27 @@ function triggerCinematicIntro(forceReplay = false) {
     }, 850);
   }
 
-  // Attempt autoplay immediately if browser allows
-  try {
+  // Automatically initiate sound and presentation sequence immediately!
+  startSoundSequence();
+
+  // Auto-unlock audio context on ANY earliest user activity (even cursor movement or touch)
+  function autoUnlockAudio() {
     initAudio();
-    if (audioCtx && audioCtx.state === 'running') {
-      startSoundSequence();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => {
+        if (!hasStartedAudio) {
+          startSoundSequence();
+        }
+      });
     }
-  } catch(e) {}
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'mousemove', 'wheel'].forEach(evt => {
+      window.removeEventListener(evt, autoUnlockAudio, { capture: true });
+    });
+  }
+
+  ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'mousemove', 'wheel'].forEach(evt => {
+    window.addEventListener(evt, autoUnlockAudio, { capture: true, passive: true });
+  });
 
   if (soundBtn) {
     soundBtn.addEventListener('click', (e) => {
@@ -585,13 +599,14 @@ function triggerCinematicIntro(forceReplay = false) {
   if (forceReplay) {
     startSoundSequence();
   } else {
-    // If user is idle after 7 seconds without interaction, smoothly transition
+    // If idle after 7 seconds without interaction, smoothly transition
     cinematicTimer = setTimeout(() => {
       if (!hasStartedAudio) {
         dismissLoader();
       }
     }, 7000);
   }
+}
 // Floating Ambient Math Formula Particles (Engineers Day Cyber Canvas)
 function initMathParticles() {
   const canvas = document.getElementById('math-particles-canvas');
