@@ -20,16 +20,51 @@
 </head>
 <body>
 
-  <!-- ================= CINEMATIC INTRO LOADER ================= -->
+  <!-- Background Cyber Elements -->
+  <canvas id="math-particles-canvas" class="math-particles-canvas"></canvas>
+  <div class="cyber-grid-floor"></div>
+
+  <!-- ================= CINEMATIC INTRO LOADER (ENGINEERS DAY SPECIAL) ================= -->
   <div id="cinematic-loader" class="cinematic-loader-overlay">
     <div class="loader-bg-glow"></div>
     <div class="loader-stars"></div>
+    <div class="cyber-scanlines"></div>
+
     <div class="loader-content">
-      <div class="present-tag animate-fade-in">A SPECIAL PRESENTATION</div>
+      <div class="engineers-day-ribbon animate-fade-in">
+        <span class="eng-icon">⚙️</span>
+        <span>SPECIAL ENGINEERS DAY EDITION</span>
+        <span class="eng-icon">⚡</span>
+      </div>
+
+      <!-- Holographic Rotating 3D Engineering Gear -->
+      <div class="hologram-gear-container animate-fade-in">
+        <svg class="hologram-gear" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="reactor-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="1"/>
+              <stop offset="50%" stop-color="#818cf8" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#030712" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(244, 63, 94, 0.35)" stroke-width="1.5"/>
+          <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="2" stroke-dasharray="3 3"/>
+          <path d="M50 10 L53 19 L62 20 L57 28 L63 35 L55 39 L57 48 L48 45 L41 49 L43 40 L35 36 L42 29 L38 21 L47 20 Z" fill="none" stroke="#38bdf8" stroke-width="2"/>
+          <circle cx="50" cy="50" r="14" fill="url(#reactor-glow)" />
+          <circle cx="50" cy="50" r="5" fill="#ffffff" />
+        </svg>
+        <div class="gear-core-pulse"></div>
+      </div>
+
+      <div class="engineers-quote animate-fade-in">
+        "Scientists study the world as it is; Engineers create the world that never has been."
+      </div>
       
       <div class="creator-reveal">
-        <span class="sub-text">PRESENTED BY</span>
+        <span class="sub-text">INNOVATED & PRESENTED BY</span>
         <h1 class="creator-name animate-glow-text">SHYAM</h1>
+        <span class="creator-branch-badge">🚀 COMPUTING & MATHEMATICAL ENGINEERING</span>
       </div>
 
       <div class="rope-loader-animation">
@@ -40,24 +75,24 @@
       </div>
 
       <div class="loader-game-title">
-        <span class="mini-tag">ENTER THE DUEL</span>
+        <span class="mini-tag">QUANTUM ALGORITHM DUEL</span>
         <h2 class="epic-title">TUG OF WAR <span class="math-glow">MATHEMATICS</span></h2>
       </div>
 
       <button class="loader-play-sound-btn pulse-glow" id="loader-start-sound-btn">
         <span class="btn-sound-wave">🔊</span>
-        <span>PLAY INTRO WITH SOUND</span>
+        <span>INITIALIZE WITH AI VOICE & SOUND</span>
       </button>
 
       <div class="sound-cue-pill" id="loader-audio-cue">
-        <span class="sound-wave-icon">🎵</span>
-        <span>TAP ANYWHERE FOR SOUNDTRACK</span>
+        <span class="sound-wave-icon">🎙️</span>
+        <span>AI VOICE ANNOUNCEMENT + EPIC SOUNDTRACK</span>
       </div>
 
       <div class="loading-bar-wrap">
         <div class="loading-bar-fill" id="loader-fill"></div>
       </div>
-      <span class="loading-status-text" id="loader-status">READY FOR SHYAM'S PRESENTATION...</span>
+      <span class="loading-status-text" id="loader-status">CALIBRATING QUANTUM ENGINE...</span>
 
       <button id="btn-skip-intro" class="skip-intro-btn">SKIP ⏭</button>
     </div>
@@ -66,8 +101,12 @@
   <!-- Top App Navbar -->
   <header class="app-header">
     <div class="header-logo">
-      <span class="logo-icon">🪢</span>
+      <span class="logo-icon">⚙️</span>
       <h1 class="header-title">TUG OF WAR: <span class="highlight">MATHEMATICS</span></h1>
+      <div class="header-eng-badge" title="Engineers Day Edition">
+        <span class="eng-gear-spin">⚡</span>
+        <span>ENGINEERS DAY</span>
+      </div>
     </div>
     <div class="header-controls">
       <button class="btn-subtle replay-intro-btn" id="btn-replay-intro" title="Play Shyam Intro Video With Sound">
@@ -80,6 +119,15 @@
       <button class="icon-btn" id="btn-sound" title="Toggle Sound">🔊</button>
     </div>
   </header>
+
+  <!-- Live Engineering Telemetry HUD Bar -->
+  <aside class="engineering-telemetry-hud" id="eng-telemetry-hud">
+    <div class="hud-pill"><span class="hud-dot"></span> <strong>LATENCY:</strong> <span id="hud-latency">11ms</span></div>
+    <div class="hud-pill"><strong>ENGINE:</strong> <span>WEBSOCKET FULL-DUPLEX</span></div>
+    <div class="hud-pill"><strong>FPS:</strong> <span id="hud-fps">60</span></div>
+    <div class="hud-pill"><strong>CALC SPEED:</strong> <span id="hud-calc-speed">1.2s/op</span></div>
+    <div class="hud-pill"><strong>ALGORITHM:</strong> <span>VECTOR TENSION PHYSICS</span></div>
+  </aside>
 
   <!-- Main Container -->
   <main class="main-container">
@@ -484,6 +532,25 @@
             <p>Score: <strong id="stat-score-p2">0</strong></p>
             <p>Accuracy: <strong id="stat-acc-p2">0%</strong></p>
             <p>Max Combo: <strong id="stat-combo-p2">0</strong></p>
+          </div>
+        </div>
+
+        <!-- Engineering Performance Matrix -->
+        <div class="engineering-matrix-card">
+          <div class="matrix-title">⚙️ ENGINEERING PERFORMANCE MATRIX</div>
+          <div class="matrix-grid">
+            <div class="matrix-item">
+              <span class="m-label">ENGINEER RANK</span>
+              <span class="m-val" id="eval-title">QUANTUM SOLVER</span>
+            </div>
+            <div class="matrix-item">
+              <span class="m-label">BRAINPOWER IQ</span>
+              <span class="m-val" id="eval-iq">142 Bp</span>
+            </div>
+            <div class="matrix-item">
+              <span class="m-label">PULL FORCE</span>
+              <span class="m-val" id="eval-joules">520 J</span>
+            </div>
           </div>
         </div>
 

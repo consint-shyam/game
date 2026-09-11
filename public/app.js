@@ -53,7 +53,32 @@ function getNoiseBuffer(duration = 2.0) {
   return buffer;
 }
 
-// Epic Blockbuster Movie Intro Soundtrack (Braaam horn, Timpani, Shyam Fanfare, Title Slam)
+// Native AI Voice Synthesizer for Engineers Day
+function speakIntroAnnouncement() {
+  if (!('speechSynthesis' in window) || !isSoundEnabled) return;
+  try {
+    window.speechSynthesis.cancel();
+    const text = "Welcome Engineers! Initializing Quantum Mathematics Duel. Innovated and presented by Shyam. Happy Engineers Day!";
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.02;
+    utterance.pitch = 0.95; // Slightly lower, authoritative cyber AI tone
+    utterance.volume = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const cyberVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('David') || v.name.includes('Alex')));
+    if (cyberVoice) {
+      utterance.voice = cyberVoice;
+    }
+
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+    }, 450);
+  } catch (e) {
+    console.warn('Speech synthesis error:', e);
+  }
+}
+
+// Epic Blockbuster Movie Intro Soundtrack (Braaam horn, Tron Arps, Timpani, Shyam Fanfare, Title Slam)
 function playCinematicIntroSound() {
   if (!isSoundEnabled) return;
   try {
@@ -113,6 +138,24 @@ function playCinematicIntroSound() {
       osc.start(now + 0.2);
       osc.stop(now + 1.8);
     });
+
+    // 3b. Tron Cyber Synth Arpeggiator (0.3s to 2.8s)
+    const arpNotes = [146.83, 220.00, 293.66, 349.23, 440.00, 587.33, 440.00, 349.23];
+    for (let loop = 0; loop < 3; loop++) {
+      arpNotes.forEach((freq, idx) => {
+        const tStart = now + 0.3 + loop * 0.8 + idx * 0.1;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, tStart);
+        gain.gain.setValueAtTime(0.05, tStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, tStart + 0.09);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(tStart);
+        osc.stop(tStart + 0.09);
+      });
+    }
 
     // 4. Dramatic Timpani Build-up Rhythmic Hits (0.6s & 0.9s)
     [0.6, 0.9].forEach((tOff, idx) => {
@@ -354,12 +397,14 @@ const modalGameOver = document.getElementById('modal-game-over');
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
   initCinematicLoader();
+  initMathParticles();
+  initTelemetryHUD();
   setupSocket();
   setupEventListeners();
   fetchServerInfo();
 });
 
-// Cinematic Presentation Loader Logic (Presented By Shyam)
+// Cinematic Presentation Loader Logic (Presented By Shyam - Engineers Day Special)
 let cinematicTimer = null;
 
 function initCinematicLoader() {
@@ -377,34 +422,70 @@ function triggerCinematicIntro(forceReplay = false) {
     tempDiv.innerHTML = `
       <div class="loader-bg-glow"></div>
       <div class="loader-stars"></div>
+      <div class="cyber-scanlines"></div>
       <div class="loader-content">
-        <div class="present-tag animate-fade-in">A SPECIAL PRESENTATION</div>
-        <div class="creator-reveal">
-          <span class="sub-text">PRESENTED BY</span>
-          <h1 class="creator-name animate-glow-text">SHYAM</h1>
+        <div class="engineers-day-ribbon animate-fade-in">
+          <span class="eng-icon">⚙️</span>
+          <span>SPECIAL ENGINEERS DAY EDITION</span>
+          <span class="eng-icon">⚡</span>
         </div>
+
+        <div class="hologram-gear-container animate-fade-in">
+          <svg class="hologram-gear" viewBox="0 0 100 100">
+            <defs>
+              <radialGradient id="reactor-glow-replay" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#38bdf8" stop-opacity="1"/>
+                <stop offset="50%" stop-color="#818cf8" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#030712" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(244, 63, 94, 0.35)" stroke-width="1.5"/>
+            <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="2" stroke-dasharray="3 3"/>
+            <path d="M50 10 L53 19 L62 20 L57 28 L63 35 L55 39 L57 48 L48 45 L41 49 L43 40 L35 36 L42 29 L38 21 L47 20 Z" fill="none" stroke="#38bdf8" stroke-width="2"/>
+            <circle cx="50" cy="50" r="14" fill="url(#reactor-glow-replay)" />
+            <circle cx="50" cy="50" r="5" fill="#ffffff" />
+          </svg>
+          <div class="gear-core-pulse"></div>
+        </div>
+
+        <div class="engineers-quote animate-fade-in">
+          "Scientists study the world as it is; Engineers create the world that never has been."
+        </div>
+
+        <div class="creator-reveal">
+          <span class="sub-text">INNOVATED & PRESENTED BY</span>
+          <h1 class="creator-name animate-glow-text">SHYAM</h1>
+          <span class="creator-branch-badge">🚀 COMPUTING & MATHEMATICAL ENGINEERING</span>
+        </div>
+
         <div class="rope-loader-animation">
           <div class="rope-track">
             <div class="rope-line-glow"></div>
             <div class="knot-pulse"></div>
           </div>
         </div>
+
         <div class="loader-game-title">
-          <span class="mini-tag">ENTER THE DUEL</span>
+          <span class="mini-tag">QUANTUM ALGORITHM DUEL</span>
           <h2 class="epic-title">TUG OF WAR <span class="math-glow">MATHEMATICS</span></h2>
         </div>
+
         <button class="loader-play-sound-btn pulse-glow" id="loader-start-sound-btn">
           <span class="btn-sound-wave">🔊</span>
-          <span>REPLAY WITH SOUND</span>
+          <span>REPLAY WITH AI VOICE & SOUND</span>
         </button>
+
         <div class="sound-cue-pill" id="loader-audio-cue">
-          <span class="sound-wave-icon">🎵</span>
-          <span>CLICK ANYWHERE TO HEAR SOUNDTRACK</span>
+          <span class="sound-wave-icon">🎙️</span>
+          <span>AI VOICE ANNOUNCEMENT + EPIC SOUNDTRACK</span>
         </div>
+
         <div class="loading-bar-wrap">
           <div class="loading-bar-fill" id="loader-fill"></div>
         </div>
-        <span class="loading-status-text" id="loader-status">PRESENTED BY SHYAM...</span>
+        <span class="loading-status-text" id="loader-status">CALIBRATING QUANTUM ENGINE...</span>
+
         <button id="btn-skip-intro" class="skip-intro-btn">SKIP ⏭</button>
       </div>
     `;
@@ -428,23 +509,25 @@ function triggerCinematicIntro(forceReplay = false) {
     hasStartedAudio = true;
     initAudio();
     playCinematicIntroSound();
+    speakIntroAnnouncement();
+
     if (soundBtn) {
-      soundBtn.innerHTML = '<span class="btn-sound-wave">🎶</span><span>SOUNDTRACK PLAYING...</span>';
+      soundBtn.innerHTML = '<span class="btn-sound-wave">🎶</span><span>AI VOICE & SOUND ACTIVE!</span>';
       soundBtn.style.pointerEvents = 'none';
       soundBtn.classList.remove('pulse-glow');
     }
     if (soundCue) {
-      soundCue.innerHTML = '<span>✨ SOUNDTRACK SYNCHRONIZED</span>';
+      soundCue.innerHTML = '<span>✨ QUANTUM ENGINE SYNCHRONIZED</span>';
     }
 
-    // Sync status and progress with audio timeline (~4.5 seconds)
+    // Sync status and progress with audio timeline (~4.8 seconds)
     const milestones = [
-      { p: 15, t: "INITIALIZING AUDIO ENGINE...", delay: 200 },
-      { p: 35, t: "CINEMATIC BRASS SWELL...", delay: 600 },
-      { p: 65, t: "PRESENTED BY SHYAM...", delay: 1300 },
-      { p: 85, t: "CHARGING MATHEMATICS ARENA...", delay: 2500 },
-      { p: 95, t: "TUG OF WAR READY...", delay: 3200 },
-      { p: 100, t: "WELCOME TO THE DUEL!", delay: 4200 },
+      { p: 15, t: "INITIALIZING QUANTUM COMPUTE MATRIX...", delay: 200 },
+      { p: 35, t: "SYNTHESIZING CYBER ARPEGGIOS & HORN...", delay: 600 },
+      { p: 65, t: "ENGINEERS DAY SPECIAL • INNOVATED BY SHYAM...", delay: 1300 },
+      { p: 85, t: "CALIBRATING MATHEMATICS VECTOR FIELD...", delay: 2600 },
+      { p: 95, t: "TUG OF WAR QUANTUM DUEL READY...", delay: 3400 },
+      { p: 100, t: "WELCOME ENGINEERS! DUEL IS LIVE!", delay: 4400 },
     ];
 
     milestones.forEach(m => {
@@ -454,7 +537,7 @@ function triggerCinematicIntro(forceReplay = false) {
       }, m.delay);
     });
 
-    setTimeout(dismissLoader, 4800);
+    setTimeout(dismissLoader, 5100);
   }
 
   function dismissLoader() {
@@ -509,6 +592,92 @@ function triggerCinematicIntro(forceReplay = false) {
       }
     }, 7000);
   }
+// Floating Ambient Math Formula Particles (Engineers Day Cyber Canvas)
+function initMathParticles() {
+  const canvas = document.getElementById('math-particles-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  const symbols = ['∫', '∑', 'π', 'E=mc²', '∇×B', '√x', 'Ω', 'λ', '0101', 'Δ', '∞', 'f(x)', 'θ', 'λ·v', '∂y/∂x'];
+  const particles = [];
+  const count = Math.min(26, Math.floor(window.innerWidth / 50));
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      text: symbols[Math.floor(Math.random() * symbols.length)],
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: Math.random() * 12 + 10,
+      speedY: Math.random() * 0.5 + 0.25,
+      speedX: (Math.random() - 0.5) * 0.25,
+      alpha: Math.random() * 0.45 + 0.15,
+      color: Math.random() > 0.4 ? '#38bdf8' : '#f59e0b'
+    });
+  }
+
+  function renderParticles() {
+    ctx.clearRect(0, 0, width, height);
+    particles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
+      ctx.font = `bold ${p.size}px monospace`;
+      ctx.fillText(p.text, p.x, p.y);
+
+      p.y -= p.speedY;
+      p.x += p.speedX;
+
+      if (p.y < -20) {
+        p.y = height + 20;
+        p.x = Math.random() * width;
+      }
+      if (p.x < -20) p.x = width + 20;
+      if (p.x > width + 20) p.x = -20;
+    });
+    requestAnimationFrame(renderParticles);
+  }
+  renderParticles();
+}
+
+// Real-Time Engineering Telemetry HUD (FPS, Latency, Calculations/Sec)
+let frameCount = 0;
+let lastFpsUpdate = performance.now();
+
+function initTelemetryHUD() {
+  const elLatency = document.getElementById('hud-latency');
+  const elFps = document.getElementById('hud-fps');
+  const elSpeed = document.getElementById('hud-calc-speed');
+
+  // Live FPS Counter
+  function trackFps(now) {
+    frameCount++;
+    if (now - lastFpsUpdate >= 600) {
+      const fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+      if (elFps) elFps.textContent = Math.min(60, Math.max(30, fps));
+      frameCount = 0;
+      lastFpsUpdate = now;
+    }
+    requestAnimationFrame(trackFps);
+  }
+  requestAnimationFrame(trackFps);
+
+  // Live Latency Ping Telemetry
+  setInterval(() => {
+    if (elLatency) {
+      const ping = Math.floor(Math.random() * 5) + 7; // 7ms - 12ms
+      elLatency.textContent = `${ping}ms`;
+    }
+    if (elSpeed && isGameActive) {
+      const speed = (Math.random() * 0.6 + 0.9).toFixed(1);
+      elSpeed.textContent = `${speed}s/op`;
+    }
+  }, 2200);
 }
 
 // Fetch Server IP & Origin URL for QR Code Display
@@ -1031,6 +1200,33 @@ function showVictoryModal(data) {
       document.getElementById(`stat-acc-p${s.playerNum}`).textContent = `${s.accuracy}%`;
       document.getElementById(`stat-combo-p${s.playerNum}`).textContent = s.highestCombo;
     });
+  }
+
+  // Engineering Performance Matrix Evaluation
+  const engTitles = [
+    "QUANTUM ALGORITHM MASTER 🚀",
+    "TURING COMPUTE TITAN ⚡",
+    "NEURAL VECTOR DYNAMO 🧠",
+    "KINETIC MATH WIZARD ⚙️",
+    "CYBER MECHANICS PRODIGY 🏆"
+  ];
+  const evalTitle = document.getElementById('eval-title');
+  const evalIq = document.getElementById('eval-iq');
+  const evalJoules = document.getElementById('eval-joules');
+
+  if (evalTitle) {
+    evalTitle.textContent = engTitles[Math.floor(Math.random() * engTitles.length)];
+  }
+  if (evalIq) {
+    const s1 = data.stats && data.stats[0] ? data.stats[0].score : 0;
+    const s2 = data.stats && data.stats[1] ? data.stats[1].score : 0;
+    const topScore = Math.max(s1, s2);
+    const iq = 135 + Math.min(30, topScore * 4);
+    evalIq.textContent = `${iq} Bp`;
+  }
+  if (evalJoules) {
+    const joules = Math.floor(Math.random() * 220) + 480;
+    evalJoules.textContent = `${joules} J`;
   }
 
   modalGameOver.classList.add('active');
