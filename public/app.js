@@ -134,22 +134,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Fetch Server IP & Origin URL for QR Code Display
 function fetchServerInfo() {
-  let targetUrl = window.location.origin;
+  // 1. Immediately set dynamic browser URL (e.g. https://your-game.onrender.com)
+  const currentOrigin = window.location.origin;
+  updateUrlAndQR(currentOrigin);
 
-  // If running locally on localhost, attempt fetching local Wi-Fi IP for local network devices
+  // 2. If running locally on localhost, fetch local Wi-Fi IP for offline local network devices
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     fetch('/api/info')
       .then(res => res.json())
       .then(data => {
         if (data && data.ip && data.ip !== 'localhost') {
-          targetUrl = `http://${data.ip}:${data.port}`;
+          updateUrlAndQR(`http://${data.ip}:${data.port}`);
         }
-        updateUrlAndQR(targetUrl);
       })
-      .catch(() => updateUrlAndQR(window.location.origin));
-  } else {
-    // Deployed online (e.g. Render, Railway, Vercel): ALWAYS use window.location.origin!
-    updateUrlAndQR(window.location.origin);
+      .catch(() => updateUrlAndQR(currentOrigin));
   }
 }
 
