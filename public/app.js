@@ -132,26 +132,50 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchServerInfo();
 });
 
-// Fetch Server IP for display
+// Fetch Server IP & Origin URL for QR Code Display
 function fetchServerInfo() {
-  fetch('/api/info')
-    .then(res => res.json())
-    .then(data => {
-      const networkUrl = `http://${data.ip}:${data.port}`;
-      document.getElementById('display-network-url').textContent = networkUrl;
-      
-      // Generate QR Code for Mobile devices
-      const qrcodeBox = document.getElementById('qrcode-box');
-      qrcodeBox.innerHTML = '';
-      if (window.QRCode) {
-        new QRCode(qrcodeBox, {
-          text: networkUrl,
-          width: 80,
-          height: 80
-        });
-      }
-    })
-    .catch(err => console.log('Info fetch error:', err));
+  let targetUrl = window.location.origin;
+
+  // If running locally on localhost, attempt fetching local Wi-Fi IP for local network devices
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    fetch('/api/info')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.ip && data.ip !== 'localhost') {
+          targetUrl = `http://${data.ip}:${data.port}`;
+        }
+        updateUrlAndQR(targetUrl);
+      })
+      .catch(() => updateUrlAndQR(window.location.origin));
+  } else {
+    // Deployed online (e.g. Render, Railway, Vercel): ALWAYS use window.location.origin!
+    updateUrlAndQR(window.location.origin);
+  }
+}
+
+function updateUrlAndQR(url) {
+  const displayEl = document.getElementById('display-network-url');
+  const displayLinkEl = document.getElementById('display-network-url-link');
+
+  if (displayEl) {
+    displayEl.textContent = url;
+  }
+  if (displayLinkEl) {
+    displayLinkEl.href = url;
+  }
+
+  // Generate QR Code containing the origin link
+  const qrcodeBox = document.getElementById('qrcode-box');
+  if (qrcodeBox) {
+    qrcodeBox.innerHTML = '';
+    if (window.QRCode) {
+      new QRCode(qrcodeBox, {
+        text: url,
+        width: 90,
+        height: 90
+      });
+    }
+  }
 }
 
 // Switch UI Screens
