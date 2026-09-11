@@ -20,6 +20,9 @@
 </head>
 <body>
 
+  <!-- Silent Audio Unlocker for browser autoplay elevation -->
+  <audio id="silent-audio-unlocker" preload="auto" playsinline loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"></audio>
+
   <!-- Background Cyber Elements -->
   <canvas id="math-particles-canvas" class="math-particles-canvas"></canvas>
   <div class="cyber-grid-floor"></div>
@@ -50,6 +53,11 @@
         <div class="loading-bar-fill" id="loader-fill"></div>
       </div>
       <span class="loading-status-text" id="loader-status">STARTING ARENA...</span>
+
+      <div class="loader-sound-status active" id="loader-sound-status" title="Sound System Status">
+        <div class="sound-eq-bars"><span></span><span></span><span></span></div>
+        <span id="sound-status-msg">STARTING AUDIO ENGINE...</span>
+      </div>
 
       <button id="btn-skip-intro" class="skip-intro-btn">ENTER DUEL ⏭</button>
     </div>

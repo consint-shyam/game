@@ -23,81 +23,116 @@ let bgmStep = 0;
 
 function initAudio() {
   if (!audioCtx) {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContext();
-    
-    // Dynamics Compressor for punchy, clean acoustics
-    masterCompressor = audioCtx.createDynamicsCompressor();
-    masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
-    masterCompressor.knee.setValueAtTime(30, audioCtx.currentTime);
-    masterCompressor.ratio.setValueAtTime(6, audioCtx.currentTime);
-    masterCompressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
-    masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
-    
-    masterGain = audioCtx.createGain();
-    masterGain.gain.setValueAtTime(isSoundEnabled ? 0.95 : 0, audioCtx.currentTime);
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return Promise.resolve(null);
+      audioCtx = new AudioContext();
+      
+      // Dynamics Compressor for punchy, clean acoustics
+      masterCompressor = audioCtx.createDynamicsCompressor();
+      masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
+      masterCompressor.knee.setValueAtTime(30, audioCtx.currentTime);
+      masterCompressor.ratio.setValueAtTime(6, audioCtx.currentTime);
+      masterCompressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+      masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+      
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(isSoundEnabled ? 0.95 : 0, audioCtx.currentTime);
 
-    bgmGain = audioCtx.createGain();
-    bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.48 : 0, audioCtx.currentTime);
-    bgmGain.connect(masterGain);
-    
-    masterGain.connect(masterCompressor);
-    masterCompressor.connect(audioCtx.destination);
+      bgmGain = audioCtx.createGain();
+      bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.48 : 0, audioCtx.currentTime);
+      bgmGain.connect(masterGain);
+      
+      masterGain.connect(masterCompressor);
+      masterCompressor.connect(audioCtx.destination);
+    } catch (e) {
+      console.warn('AudioContext init error:', e);
+      return Promise.resolve(null);
+    }
   }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+
+  if (audioCtx && audioCtx.state === 'suspended') {
+    return audioCtx.resume().then(() => {
+      updateSoundStatusUI(audioCtx.state === 'running');
+      return audioCtx;
+    }).catch(err => {
+      updateSoundStatusUI(false);
+      return audioCtx;
+    });
+  } else if (audioCtx && audioCtx.state === 'running') {
+    updateSoundStatusUI(true);
+    return Promise.resolve(audioCtx);
+  }
+  return Promise.resolve(audioCtx);
+}
+
+function updateSoundStatusUI(isRunning) {
+  const statusEl = document.getElementById('loader-sound-status');
+  if (statusEl) {
+    if (isRunning && isSoundEnabled) {
+      statusEl.className = 'loader-sound-status active';
+      statusEl.innerHTML = `
+        <div class="sound-eq-bars"><span></span><span></span><span></span></div>
+        <span id="sound-status-msg">🎵 AUDIO & MUSIC ACTIVE</span>
+      `;
+    } else if (isSoundEnabled) {
+      statusEl.className = 'loader-sound-status needs-tap';
+      statusEl.innerHTML = `
+        <span>🔊 TAP / MOVE ANYWHERE FOR MUSIC</span>
+      `;
+    } else {
+      statusEl.className = 'loader-sound-status';
+      statusEl.innerHTML = `<span>🔇 SOUND MUTED</span>`;
+    }
   }
 }
 
 // High-Energy Upbeat Background Music Engine (128 BPM Cyber Battle Loop)
 function startExcitedBGM() {
   if (!isSoundEnabled) return;
-  initAudio();
-  if (!audioCtx || !bgmGain) return;
+  initAudio().then(() => {
+    if (!audioCtx || !bgmGain) return;
 
-  isBgmPlaying = true;
+    isBgmPlaying = true;
 
-  // Attempt to resume audio context if suspended
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
-  }
+    // If already actively looping, don't create duplicate intervals
+    if (bgmInterval) return;
 
-  // If already actively looping, don't create duplicate intervals
-  if (bgmInterval) return;
+    bgmStep = 0;
+    const stepTime = 60 / 128 / 4; // 16th note at 128 BPM (~117ms)
 
-  bgmStep = 0;
-  const stepTime = 60 / 128 / 4; // 16th note at 128 BPM (~117ms)
+    // Melodic Arpeggio Notes (Dm -> F -> C -> G progression)
+    const leadPattern = [
+      293.66, null, 349.23, null, 440.00, null, 587.33, null,  // D4, F4, A4, D5
+      523.25, null, 440.00, null, 349.23, null, 392.00, null,  // C5, A4, F4, G4
+      293.66, 349.23, 440.00, 523.25, 587.33, 523.25, 440.00, 349.23,
+      392.00, null, 440.00, null, 523.25, null, 587.33, null
+    ];
 
-  // Melodic Arpeggio Notes (Dm -> F -> C -> G progression)
-  const leadPattern = [
-    293.66, null, 349.23, null, 440.00, null, 587.33, null,  // D4, F4, A4, D5
-    523.25, null, 440.00, null, 349.23, null, 392.00, null,  // C5, A4, F4, G4
-    293.66, 349.23, 440.00, 523.25, 587.33, 523.25, 440.00, 349.23,
-    392.00, null, 440.00, null, 523.25, null, 587.33, null
-  ];
+    // Driving Bass Notes
+    const bassPattern = [
+      73.42, 73.42, null, 73.42, 87.31, 87.31, null, 87.31,   // D2, F2
+      65.41, 65.41, null, 65.41, 98.00, 98.00, null, 98.00,   // C2, G2
+      73.42, 73.42, 73.42, 73.42, 87.31, 87.31, 87.31, 87.31,
+      65.41, 65.41, 65.41, 65.41, 98.00, 98.00, 110.00, 130.81
+    ];
 
-  // Driving Bass Notes
-  const bassPattern = [
-    73.42, 73.42, null, 73.42, 87.31, 87.31, null, 87.31,   // D2, F2
-    65.41, 65.41, null, 65.41, 98.00, 98.00, null, 98.00,   // C2, G2
-    73.42, 73.42, 73.42, 73.42, 87.31, 87.31, 87.31, 87.31,
-    65.41, 65.41, 65.41, 65.41, 98.00, 98.00, 110.00, 130.81
-  ];
+    // Warm Synth Chords on bar boundaries
+    const chordRoots = [
+      [146.83, 220.00, 261.63], // Dm7
+      [174.61, 220.00, 261.63], // F
+      [130.81, 196.00, 261.63], // C
+      [196.00, 246.94, 293.66]  // G
+    ];
 
-  // Warm Synth Chords on bar boundaries
-  const chordRoots = [
-    [146.83, 220.00, 261.63], // Dm7
-    [174.61, 220.00, 261.63], // F
-    [130.81, 196.00, 261.63], // C
-    [196.00, 246.94, 293.66]  // G
-  ];
-
-  bgmInterval = setInterval(() => {
-    if (!isBgmPlaying || !isSoundEnabled || !audioCtx) return;
-    if (audioCtx.state !== 'running') {
-      audioCtx.resume().catch(() => {});
-      return;
-    }
+    bgmInterval = setInterval(() => {
+      if (!isBgmPlaying || !isSoundEnabled || !audioCtx) return;
+      if (audioCtx.state !== 'running') {
+        audioCtx.resume().then(() => {
+          updateSoundStatusUI(true);
+        }).catch(() => {});
+        return;
+      }
 
     const now = audioCtx.currentTime;
     const step = bgmStep % 32;
@@ -212,6 +247,7 @@ function startExcitedBGM() {
 
     bgmStep++;
   }, Math.round(stepTime * 1000));
+  });
 }
 
 function stopBGM() {
@@ -245,15 +281,30 @@ function speakIntroAnnouncement() {
     utterance.pitch = 0.95; // Slightly lower, authoritative cyber AI tone
     utterance.volume = 1.0;
 
-    const voices = window.speechSynthesis.getVoices();
-    const cyberVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('David') || v.name.includes('Alex')));
-    if (cyberVoice) {
-      utterance.voice = cyberVoice;
-    }
+    let hasSpoken = false;
+    const doSpeak = () => {
+      if (hasSpoken) return;
+      hasSpoken = true;
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        const cyberVoice = voices.find(v => v.lang && v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('David') || v.name.includes('Alex')));
+        if (cyberVoice) {
+          utterance.voice = cyberVoice;
+        }
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn('Speech synthesis speak error:', err);
+      }
+    };
 
-    setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 450);
+    if (window.speechSynthesis.getVoices().length > 0) {
+      setTimeout(doSpeak, 450);
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        setTimeout(doSpeak, 450);
+      };
+      setTimeout(doSpeak, 650);
+    }
   } catch (e) {
     console.warn('Speech synthesis error:', e);
   }
@@ -613,12 +664,21 @@ const modalGameOver = document.getElementById('modal-game-over');
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
+  initAudio();
   initCinematicLoader();
   initMathParticles();
   initTelemetryHUD();
   setupSocket();
   setupEventListeners();
   fetchServerInfo();
+});
+
+window.addEventListener('load', () => {
+  initAudio();
+  const silentUnlocker = document.getElementById('silent-audio-unlocker');
+  if (silentUnlocker) {
+    silentUnlocker.play().catch(() => {});
+  }
 });
 
 // Cinematic Presentation Loader Logic (Presented By Shyam - Engineers Day Special)
@@ -660,6 +720,11 @@ function triggerCinematicIntro(forceReplay = false) {
         </div>
         <span class="loading-status-text" id="loader-status">STARTING ARENA...</span>
 
+        <div class="loader-sound-status active" id="loader-sound-status" title="Sound System Status">
+          <div class="sound-eq-bars"><span></span><span></span><span></span></div>
+          <span id="sound-status-msg">STARTING AUDIO ENGINE...</span>
+        </div>
+
         <button id="btn-skip-intro" class="skip-intro-btn">ENTER DUEL ⏭</button>
       </div>
     `;
@@ -676,18 +741,39 @@ function triggerCinematicIntro(forceReplay = false) {
 
   let hasStartedIntroSound = false;
 
+  function playIntroSoundSequence() {
+    if (hasStartedIntroSound || !isSoundEnabled) return;
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    hasStartedIntroSound = true;
+    updateSoundStatusUI(true);
+    playCinematicIntroSound();
+    speakIntroAnnouncement();
+  }
+
   function tryPlayIntroSound() {
-    initAudio();
-    if (audioCtx && audioCtx.state === 'running' && !hasStartedIntroSound) {
-      hasStartedIntroSound = true;
-      playCinematicIntroSound();
-      speakIntroAnnouncement();
-    }
+    if (!isSoundEnabled || hasStartedIntroSound) return;
+    initAudio().then(() => {
+      if (audioCtx && audioCtx.state === 'running') {
+        playIntroSoundSequence();
+      } else {
+        updateSoundStatusUI(false);
+      }
+    }).catch(() => {
+      updateSoundStatusUI(false);
+    });
   }
 
   function startPresentationSequence() {
-    initAudio();
+    // Attempt automatic playback immediately as DOM is rendered
     tryPlayIntroSound();
+
+    // Also attempt silent HTML5 unlocker for browser autoplay permission elevation
+    const silentUnlocker = document.getElementById('silent-audio-unlocker');
+    if (silentUnlocker) {
+      silentUnlocker.play().then(() => {
+        tryPlayIntroSound();
+      }).catch(() => {});
+    }
 
     // Progress milestone timeline (~8.5 seconds)
     const milestones = [
@@ -725,27 +811,31 @@ function triggerCinematicIntro(forceReplay = false) {
   // Start presentation sequence automatically
   startPresentationSequence();
 
-  // If user touches or clicks anywhere on screen, prime the audio context silently
-  const primeAudioContext = () => {
-    initAudio();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().then(() => {
-        tryPlayIntroSound();
-      }).catch(() => {});
-    }
+  // Multi-event autoplay unblocker: any movement, scroll, key, or tap unlocks audio seamlessly
+  const unlockAudioAndPlayIntro = () => {
+    if (hasStartedIntroSound) return;
+    tryPlayIntroSound();
   };
-  ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(evt => {
-    window.addEventListener(evt, primeAudioContext, { once: true, passive: true });
+
+  ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'mousemove', 'wheel', 'scroll', 'focus'].forEach(evt => {
+    window.addEventListener(evt, unlockAudioAndPlayIntro, { passive: true });
   });
+
+  // Direct click on sound status pill
+  const soundStatusPill = document.getElementById('loader-sound-status');
+  if (soundStatusPill) {
+    soundStatusPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      tryPlayIntroSound();
+    });
+  }
 
   if (skipBtn) {
     skipBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      initAudio();
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-      }
-      dismissLoader();
+      initAudio().then(() => {
+        dismissLoader();
+      });
     });
   }
 }
@@ -1171,25 +1261,19 @@ function setupEventListeners() {
     }
   });
 
-  // Global Interaction Unmute Listener (ensures audio plays instantly upon any user tap/click anywhere)
+  // Global Interaction Unmute Listener (ensures audio plays instantly upon any user interaction or movement)
   const globalUnmuteHandler = () => {
     if (!isSoundEnabled) return;
-    initAudio();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().then(() => {
+    initAudio().then(() => {
+      if (audioCtx && audioCtx.state === 'running') {
         const loader = document.getElementById('cinematic-loader');
         if (!loader && isSoundEnabled && !isBgmPlaying) {
           startExcitedBGM();
         }
-      }).catch(() => {});
-    } else if (isSoundEnabled && !isBgmPlaying) {
-      const loader = document.getElementById('cinematic-loader');
-      if (!loader) {
-        startExcitedBGM();
       }
-    }
+    });
   };
-  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+  ['click', 'touchstart', 'pointerdown', 'keydown', 'mousemove', 'wheel', 'scroll'].forEach(evt => {
     window.addEventListener(evt, globalUnmuteHandler, { passive: true });
   });
 
