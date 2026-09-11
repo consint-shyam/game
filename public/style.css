@@ -1602,6 +1602,56 @@ body {
   text-shadow: 0 0 20px rgba(56, 189, 248, 0.7);
 }
 
+.loader-sound-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.35) 0%, rgba(124, 58, 237, 0.45) 50%, rgba(225, 29, 72, 0.35) 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  padding: clamp(6px, 1.2vh, 9px) clamp(14px, 3vw, 22px);
+  border-radius: 30px;
+  font-family: var(--font-mono);
+  font-size: clamp(0.68rem, 1.8vw, 0.82rem);
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), 0 0 35px rgba(124, 58, 237, 0.25);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: musicPillPulse 2s infinite ease-in-out;
+  touch-action: manipulation;
+}
+
+.loader-sound-pill:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.6) 0%, rgba(124, 58, 237, 0.7) 50%, rgba(225, 29, 72, 0.6) 100%);
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.65), 0 0 45px rgba(124, 58, 237, 0.5);
+  border-color: #38bdf8;
+}
+
+.loader-sound-pill.unmuted {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes musicPillPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+  50% { transform: scale(1.04); box-shadow: 0 0 30px rgba(56, 189, 248, 0.6), 0 0 40px rgba(124, 58, 237, 0.4); }
+}
+
+.pill-sound-icon {
+  font-size: 1rem;
+  animation: soundBounce 0.6s infinite alternate;
+}
+
+@keyframes soundBounce {
+  0% { transform: scale(0.9); }
+  100% { transform: scale(1.2); }
+}
+
 .loading-bar-wrap {
   width: 100%;
   max-width: 260px;

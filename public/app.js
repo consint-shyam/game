@@ -26,7 +26,7 @@ function initAudio() {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContext();
     
-    // Dynamics Compressor for punchy, clean cinematic acoustics
+    // Dynamics Compressor for punchy, clean acoustics
     masterCompressor = audioCtx.createDynamicsCompressor();
     masterCompressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
     masterCompressor.knee.setValueAtTime(30, audioCtx.currentTime);
@@ -35,27 +35,39 @@ function initAudio() {
     masterCompressor.release.setValueAtTime(0.25, audioCtx.currentTime);
     
     masterGain = audioCtx.createGain();
-    masterGain.gain.setValueAtTime(isSoundEnabled ? 0.85 : 0, audioCtx.currentTime);
+    masterGain.gain.setValueAtTime(isSoundEnabled ? 0.95 : 0, audioCtx.currentTime);
 
     bgmGain = audioCtx.createGain();
-    bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.22 : 0, audioCtx.currentTime);
+    bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.48 : 0, audioCtx.currentTime);
     bgmGain.connect(masterGain);
     
     masterGain.connect(masterCompressor);
     masterCompressor.connect(audioCtx.destination);
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    audioCtx.resume().catch(() => {});
   }
 }
 
 // High-Energy Upbeat Background Music Engine (128 BPM Cyber Battle Loop)
 function startExcitedBGM() {
-  if (isBgmPlaying || !isSoundEnabled) return;
+  if (!isSoundEnabled) return;
   initAudio();
   if (!audioCtx || !bgmGain) return;
 
+  // If audio context is suspended by browser policy, resume and then start loop
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().then(() => {
+      startExcitedBGM();
+    }).catch(() => {});
+    return;
+  }
+
+  // If already actively looping, don't create duplicate intervals
+  if (isBgmPlaying && bgmInterval) return;
+
   isBgmPlaying = true;
+  if (bgmInterval) clearInterval(bgmInterval);
   bgmStep = 0;
   const stepTime = 60 / 128 / 4; // 16th note at 128 BPM (~117ms)
 
@@ -75,91 +87,130 @@ function startExcitedBGM() {
     65.41, 65.41, 65.41, 65.41, 98.00, 98.00, 110.00, 130.81
   ];
 
+  // Warm Synth Chords on bar boundaries
+  const chordRoots = [
+    [146.83, 220.00, 261.63], // Dm7
+    [174.61, 220.00, 261.63], // F
+    [130.81, 196.00, 261.63], // C
+    [196.00, 246.94, 293.66]  // G
+  ];
+
   bgmInterval = setInterval(() => {
     if (!isBgmPlaying || !isSoundEnabled || !audioCtx) return;
+    if (audioCtx.state !== 'running') {
+      audioCtx.resume().catch(() => {});
+      return;
+    }
+
     const now = audioCtx.currentTime;
     const step = bgmStep % 32;
 
-    // 1. Kick Drum (Punchy on every quarter note: 0, 4, 8, 12, 16, 20, 24, 28)
-    if (step % 4 === 0) {
-      const kickOsc = audioCtx.createOscillator();
-      const kickGain = audioCtx.createGain();
-      kickOsc.type = 'sine';
-      kickOsc.frequency.setValueAtTime(145, now);
-      kickOsc.frequency.exponentialRampToValueAtTime(36, now + 0.11);
-      kickGain.gain.setValueAtTime(0.55, now);
-      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-      kickOsc.connect(kickGain);
-      kickGain.connect(bgmGain);
-      kickOsc.start(now);
-      kickOsc.stop(now + 0.12);
-    }
+    try {
+      // 1. Kick Drum (Punchy on every quarter note: 0, 4, 8, 12, 16, 20, 24, 28)
+      if (step % 4 === 0) {
+        const kickOsc = audioCtx.createOscillator();
+        const kickGain = audioCtx.createGain();
+        kickOsc.type = 'sine';
+        kickOsc.frequency.setValueAtTime(155, now);
+        kickOsc.frequency.exponentialRampToValueAtTime(38, now + 0.12);
+        kickGain.gain.setValueAtTime(0.75, now);
+        kickGain.gain.linearRampToValueAtTime(0.0001, now + 0.13);
+        kickOsc.connect(kickGain);
+        kickGain.connect(bgmGain);
+        kickOsc.start(now);
+        kickOsc.stop(now + 0.13);
+      }
 
-    // 2. Crisp Hi-Hat (Offbeat 16th notes: step % 2 === 1)
-    if (step % 2 === 1) {
-      const hatOsc = audioCtx.createOscillator();
-      const hatFilter = audioCtx.createBiquadFilter();
-      const hatGain = audioCtx.createGain();
-      hatOsc.type = 'sawtooth';
-      hatOsc.frequency.setValueAtTime(3200, now);
-      hatFilter.type = 'highpass';
-      hatFilter.frequency.setValueAtTime(7000, now);
-      hatGain.gain.setValueAtTime(step % 4 === 2 ? 0.16 : 0.08, now);
-      hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-      hatOsc.connect(hatFilter);
-      hatFilter.connect(hatGain);
-      hatGain.connect(bgmGain);
-      hatOsc.start(now);
-      hatOsc.stop(now + 0.04);
-    }
+      // 2. Crisp Hi-Hat (Offbeat 16th notes: step % 2 === 1)
+      if (step % 2 === 1) {
+        const hatOsc = audioCtx.createOscillator();
+        const hatFilter = audioCtx.createBiquadFilter();
+        const hatGain = audioCtx.createGain();
+        hatOsc.type = 'sawtooth';
+        hatOsc.frequency.setValueAtTime(4500, now);
+        hatFilter.type = 'highpass';
+        hatFilter.frequency.setValueAtTime(8000, now);
+        hatGain.gain.setValueAtTime(step % 4 === 2 ? 0.22 : 0.12, now);
+        hatGain.gain.linearRampToValueAtTime(0.0001, now + 0.05);
+        hatOsc.connect(hatFilter);
+        hatFilter.connect(hatGain);
+        hatGain.connect(bgmGain);
+        hatOsc.start(now);
+        hatOsc.stop(now + 0.05);
+      }
 
-    // 3. Snare / Clap Snap on beats 2 and 4 (step 4, 12, 20, 28)
-    if (step % 8 === 4) {
-      const snareOsc = audioCtx.createOscillator();
-      const snareGain = audioCtx.createGain();
-      snareOsc.type = 'triangle';
-      snareOsc.frequency.setValueAtTime(220, now);
-      snareGain.gain.setValueAtTime(0.24, now);
-      snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-      snareOsc.connect(snareGain);
-      snareGain.connect(bgmGain);
-      snareOsc.start(now);
-      snareOsc.stop(now + 0.13);
-    }
+      // 3. Snare / Clap Snap on beats 2 and 4 (step 4, 12, 20, 28)
+      if (step % 8 === 4) {
+        const snareOsc = audioCtx.createOscillator();
+        const snareGain = audioCtx.createGain();
+        snareOsc.type = 'triangle';
+        snareOsc.frequency.setValueAtTime(240, now);
+        snareGain.gain.setValueAtTime(0.35, now);
+        snareGain.gain.linearRampToValueAtTime(0.0001, now + 0.14);
+        snareOsc.connect(snareGain);
+        snareGain.connect(bgmGain);
+        snareOsc.start(now);
+        snareOsc.stop(now + 0.14);
+      }
 
-    // 4. Driving Pumping Synth Bassline
-    const bassFreq = bassPattern[step];
-    if (bassFreq) {
-      const bOsc = audioCtx.createOscillator();
-      const bFilter = audioCtx.createBiquadFilter();
-      const bGain = audioCtx.createGain();
-      bOsc.type = 'sawtooth';
-      bOsc.frequency.setValueAtTime(bassFreq, now);
-      bFilter.type = 'lowpass';
-      bFilter.Q.setValueAtTime(3.5, now);
-      bFilter.frequency.setValueAtTime(450, now);
-      bGain.gain.setValueAtTime(0.22, now);
-      bGain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 1.8);
-      bOsc.connect(bFilter);
-      bFilter.connect(bGain);
-      bGain.connect(bgmGain);
-      bOsc.start(now);
-      bOsc.stop(now + stepTime * 1.8);
-    }
+      // 4. Driving Pumping Synth Bassline
+      const bassFreq = bassPattern[step];
+      if (bassFreq) {
+        const bOsc = audioCtx.createOscillator();
+        const bFilter = audioCtx.createBiquadFilter();
+        const bGain = audioCtx.createGain();
+        bOsc.type = 'sawtooth';
+        bOsc.frequency.setValueAtTime(bassFreq, now);
+        bFilter.type = 'lowpass';
+        bFilter.Q.setValueAtTime(4.0, now);
+        bFilter.frequency.setValueAtTime(500, now);
+        bGain.gain.setValueAtTime(0.32, now);
+        bGain.gain.linearRampToValueAtTime(0.0001, now + stepTime * 1.8);
+        bOsc.connect(bFilter);
+        bFilter.connect(bGain);
+        bGain.connect(bgmGain);
+        bOsc.start(now);
+        bOsc.stop(now + stepTime * 1.8);
+      }
 
-    // 5. Catchy Upbeat Melodic Arp
-    const leadFreq = leadPattern[step];
-    if (leadFreq) {
-      const lOsc = audioCtx.createOscillator();
-      const lGain = audioCtx.createGain();
-      lOsc.type = 'triangle';
-      lOsc.frequency.setValueAtTime(leadFreq, now);
-      lGain.gain.setValueAtTime(0.18, now);
-      lGain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 1.4);
-      lOsc.connect(lGain);
-      lGain.connect(bgmGain);
-      lOsc.start(now);
-      lOsc.stop(now + stepTime * 1.4);
+      // 5. Catchy Upbeat Melodic Arp
+      const leadFreq = leadPattern[step];
+      if (leadFreq) {
+        const lOsc = audioCtx.createOscillator();
+        const lGain = audioCtx.createGain();
+        lOsc.type = 'triangle';
+        lOsc.frequency.setValueAtTime(leadFreq, now);
+        lGain.gain.setValueAtTime(0.26, now);
+        lGain.gain.linearRampToValueAtTime(0.0001, now + stepTime * 1.5);
+        lOsc.connect(lGain);
+        lGain.connect(bgmGain);
+        lOsc.start(now);
+        lOsc.stop(now + stepTime * 1.5);
+      }
+
+      // 6. Warm Synth Chords on bar boundaries
+      if (step % 8 === 0) {
+        const barIdx = Math.floor(step / 8) % 4;
+        const chord = chordRoots[barIdx];
+        chord.forEach(freq => {
+          const cOsc = audioCtx.createOscillator();
+          const cFilter = audioCtx.createBiquadFilter();
+          const cGain = audioCtx.createGain();
+          cOsc.type = 'sine';
+          cOsc.frequency.setValueAtTime(freq, now);
+          cFilter.type = 'lowpass';
+          cFilter.frequency.setValueAtTime(1200, now);
+          cGain.gain.setValueAtTime(0.08, now);
+          cGain.gain.linearRampToValueAtTime(0.0001, now + stepTime * 7.5);
+          cOsc.connect(cFilter);
+          cFilter.connect(cGain);
+          cGain.connect(bgmGain);
+          cOsc.start(now);
+          cOsc.stop(now + stepTime * 7.5);
+        });
+      }
+    } catch (e) {
+      console.warn('BGM step error:', e);
     }
 
     bgmStep++;
@@ -607,6 +658,11 @@ function triggerCinematicIntro(forceReplay = false) {
           <h2 class="epic-title">TUG OF WAR <span class="math-glow">MATHEMATICS</span></h2>
         </div>
 
+        <button type="button" id="btn-unmute-intro" class="loader-sound-pill animate-fade-in" title="Play with Music">
+          <span class="pill-sound-icon">🔊</span>
+          <span id="loader-sound-label">TAP ANYWHERE FOR MUSIC</span>
+        </button>
+
         <div class="loading-bar-wrap">
           <div class="loading-bar-fill" id="loader-fill"></div>
         </div>
@@ -625,17 +681,43 @@ function triggerCinematicIntro(forceReplay = false) {
   const fillBar = document.getElementById('loader-fill');
   const statusText = document.getElementById('loader-status');
   const skipBtn = document.getElementById('btn-skip-intro');
+  const unmuteBtn = document.getElementById('btn-unmute-intro');
 
-  let hasStartedAudio = false;
+  let hasStartedIntroAudio = false;
+
+  function unlockAndStartAudio() {
+    initAudio();
+    const label = document.getElementById('loader-sound-label');
+    const btn = document.getElementById('btn-unmute-intro');
+
+    function executeAudio() {
+      if (label) label.textContent = 'MUSIC & SOUND ACTIVE 🎵';
+      if (btn) btn.classList.add('unmuted');
+      if (!hasStartedIntroAudio) {
+        hasStartedIntroAudio = true;
+        playCinematicIntroSound();
+        speakIntroAnnouncement();
+      }
+      startExcitedBGM();
+    }
+
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => {
+        executeAudio();
+      }).catch(() => {});
+    } else {
+      executeAudio();
+    }
+  }
 
   function startSoundSequence() {
-    if (hasStartedAudio) return;
-    hasStartedAudio = true;
     initAudio();
-    playCinematicIntroSound();
-    speakIntroAnnouncement();
+    // If audio is already allowed, play audio immediately
+    if (audioCtx && audioCtx.state === 'running') {
+      unlockAndStartAudio();
+    }
 
-    // Sync status and progress with extended audio timeline (~8.5 seconds)
+    // Sync status and progress with extended timeline (~8.5 seconds)
     const milestones = [
       { p: 15, t: "INITIALIZING QUANTUM ARENA...", delay: 500 },
       { p: 35, t: "PRESENTED BY SHYAM...", delay: 1800 },
@@ -660,54 +742,48 @@ function triggerCinematicIntro(forceReplay = false) {
     loaderOverlay.classList.add('fade-out');
     setTimeout(() => {
       loaderOverlay.remove();
-      // Start exciting background battle music!
+      // Ensure excited background battle music plays!
       startExcitedBGM();
     }, 850);
   }
 
-  // Automatically initiate sound and presentation sequence immediately!
+  // Automatically start visual & audio sequence
   startSoundSequence();
 
-  // Auto-unlock audio context on ANY earliest user activity (even cursor movement or touch)
-  function autoUnlockAudio() {
-    initAudio();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().then(() => {
-        if (!hasStartedAudio) {
-          startSoundSequence();
-        }
-      });
-    }
-    ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'mousemove', 'wheel'].forEach(evt => {
-      window.removeEventListener(evt, autoUnlockAudio, { capture: true });
+  // Instant unlock on unmute button or anywhere on card
+  if (unmuteBtn) {
+    unmuteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      unlockAndStartAudio();
     });
   }
 
-  ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'mousemove', 'wheel'].forEach(evt => {
-    window.addEventListener(evt, autoUnlockAudio, { capture: true, passive: true });
+  loaderOverlay.addEventListener('click', () => {
+    unlockAndStartAudio();
   });
 
-  // Clicking anywhere on the loader card or overlay also unlocks audio sequence
-  loaderOverlay.addEventListener('click', () => {
-    startSoundSequence();
-  });
+  const gestureEvents = ['pointerdown', 'touchstart', 'mousedown', 'keydown'];
+  function onFirstLoaderGesture() {
+    unlockAndStartAudio();
+    gestureEvents.forEach(evt => window.removeEventListener(evt, onFirstLoaderGesture, { capture: true }));
+  }
+  gestureEvents.forEach(evt => window.addEventListener(evt, onFirstLoaderGesture, { capture: true, passive: true }));
 
   if (skipBtn) {
     skipBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      unlockAndStartAudio();
       dismissLoader();
     });
   }
 
   // If force replay, start sound immediately
   if (forceReplay) {
-    startSoundSequence();
+    unlockAndStartAudio();
   } else {
     // If idle after 11 seconds without interaction, smoothly transition
     cinematicTimer = setTimeout(() => {
-      if (!hasStartedAudio) {
-        dismissLoader();
-      }
+      dismissLoader();
     }, 11000);
   }
 }
@@ -1111,22 +1187,44 @@ function setupEventListeners() {
   // Dynamic Window Resize Listener
   window.addEventListener('resize', setupDeviceCards);
 
-  // Sound Toggle
-  document.getElementById('btn-sound').addEventListener('click', () => {
+  // Sound Toggle Button
+  document.getElementById('btn-sound').addEventListener('click', (e) => {
+    e.stopPropagation();
     initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
     isSoundEnabled = !isSoundEnabled;
     document.getElementById('btn-sound').textContent = isSoundEnabled ? '🔊' : '🔇';
     if (masterGain && audioCtx) {
-      masterGain.gain.setValueAtTime(isSoundEnabled ? 0.85 : 0, audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(isSoundEnabled ? 0.95 : 0, audioCtx.currentTime);
     }
     if (bgmGain && audioCtx) {
-      bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.22 : 0, audioCtx.currentTime);
+      bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.48 : 0, audioCtx.currentTime);
     }
-    if (isSoundEnabled && !isBgmPlaying) {
+    if (isSoundEnabled) {
       startExcitedBGM();
-    } else if (!isSoundEnabled && isBgmPlaying) {
+    } else {
       stopBGM();
     }
+  });
+
+  // Global Interaction Unmute Listener (ensures audio plays instantly upon any user tap/click anywhere)
+  const globalUnmuteHandler = () => {
+    if (!isSoundEnabled) return;
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => {
+        if (isSoundEnabled && !isBgmPlaying) {
+          startExcitedBGM();
+        }
+      }).catch(() => {});
+    } else if (isSoundEnabled && !isBgmPlaying) {
+      startExcitedBGM();
+    }
+  };
+  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, globalUnmuteHandler, { passive: true });
   });
 
   // Replay Shyam Cinematic Presentation
