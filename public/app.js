@@ -16,6 +16,10 @@ let isGameActive = false;
 let audioCtx = null;
 let masterGain = null;
 let masterCompressor = null;
+let bgmGain = null;
+let bgmInterval = null;
+let isBgmPlaying = false;
+let bgmStep = 0;
 
 function initAudio() {
   if (!audioCtx) {
@@ -32,12 +36,141 @@ function initAudio() {
     
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(isSoundEnabled ? 0.85 : 0, audioCtx.currentTime);
+
+    bgmGain = audioCtx.createGain();
+    bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.22 : 0, audioCtx.currentTime);
+    bgmGain.connect(masterGain);
     
     masterGain.connect(masterCompressor);
     masterCompressor.connect(audioCtx.destination);
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
+  }
+}
+
+// High-Energy Upbeat Background Music Engine (128 BPM Cyber Battle Loop)
+function startExcitedBGM() {
+  if (isBgmPlaying || !isSoundEnabled) return;
+  initAudio();
+  if (!audioCtx || !bgmGain) return;
+
+  isBgmPlaying = true;
+  bgmStep = 0;
+  const stepTime = 60 / 128 / 4; // 16th note at 128 BPM (~117ms)
+
+  // Melodic Arpeggio Notes (Dm -> F -> C -> G progression)
+  const leadPattern = [
+    293.66, null, 349.23, null, 440.00, null, 587.33, null,  // D4, F4, A4, D5
+    523.25, null, 440.00, null, 349.23, null, 392.00, null,  // C5, A4, F4, G4
+    293.66, 349.23, 440.00, 523.25, 587.33, 523.25, 440.00, 349.23,
+    392.00, null, 440.00, null, 523.25, null, 587.33, null
+  ];
+
+  // Driving Bass Notes
+  const bassPattern = [
+    73.42, 73.42, null, 73.42, 87.31, 87.31, null, 87.31,   // D2, F2
+    65.41, 65.41, null, 65.41, 98.00, 98.00, null, 98.00,   // C2, G2
+    73.42, 73.42, 73.42, 73.42, 87.31, 87.31, 87.31, 87.31,
+    65.41, 65.41, 65.41, 65.41, 98.00, 98.00, 110.00, 130.81
+  ];
+
+  bgmInterval = setInterval(() => {
+    if (!isBgmPlaying || !isSoundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const step = bgmStep % 32;
+
+    // 1. Kick Drum (Punchy on every quarter note: 0, 4, 8, 12, 16, 20, 24, 28)
+    if (step % 4 === 0) {
+      const kickOsc = audioCtx.createOscillator();
+      const kickGain = audioCtx.createGain();
+      kickOsc.type = 'sine';
+      kickOsc.frequency.setValueAtTime(145, now);
+      kickOsc.frequency.exponentialRampToValueAtTime(36, now + 0.11);
+      kickGain.gain.setValueAtTime(0.55, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      kickOsc.connect(kickGain);
+      kickGain.connect(bgmGain);
+      kickOsc.start(now);
+      kickOsc.stop(now + 0.12);
+    }
+
+    // 2. Crisp Hi-Hat (Offbeat 16th notes: step % 2 === 1)
+    if (step % 2 === 1) {
+      const hatOsc = audioCtx.createOscillator();
+      const hatFilter = audioCtx.createBiquadFilter();
+      const hatGain = audioCtx.createGain();
+      hatOsc.type = 'sawtooth';
+      hatOsc.frequency.setValueAtTime(3200, now);
+      hatFilter.type = 'highpass';
+      hatFilter.frequency.setValueAtTime(7000, now);
+      hatGain.gain.setValueAtTime(step % 4 === 2 ? 0.16 : 0.08, now);
+      hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      hatOsc.connect(hatFilter);
+      hatFilter.connect(hatGain);
+      hatGain.connect(bgmGain);
+      hatOsc.start(now);
+      hatOsc.stop(now + 0.04);
+    }
+
+    // 3. Snare / Clap Snap on beats 2 and 4 (step 4, 12, 20, 28)
+    if (step % 8 === 4) {
+      const snareOsc = audioCtx.createOscillator();
+      const snareGain = audioCtx.createGain();
+      snareOsc.type = 'triangle';
+      snareOsc.frequency.setValueAtTime(220, now);
+      snareGain.gain.setValueAtTime(0.24, now);
+      snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+      snareOsc.connect(snareGain);
+      snareGain.connect(bgmGain);
+      snareOsc.start(now);
+      snareOsc.stop(now + 0.13);
+    }
+
+    // 4. Driving Pumping Synth Bassline
+    const bassFreq = bassPattern[step];
+    if (bassFreq) {
+      const bOsc = audioCtx.createOscillator();
+      const bFilter = audioCtx.createBiquadFilter();
+      const bGain = audioCtx.createGain();
+      bOsc.type = 'sawtooth';
+      bOsc.frequency.setValueAtTime(bassFreq, now);
+      bFilter.type = 'lowpass';
+      bFilter.Q.setValueAtTime(3.5, now);
+      bFilter.frequency.setValueAtTime(450, now);
+      bGain.gain.setValueAtTime(0.22, now);
+      bGain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 1.8);
+      bOsc.connect(bFilter);
+      bFilter.connect(bGain);
+      bGain.connect(bgmGain);
+      bOsc.start(now);
+      bOsc.stop(now + stepTime * 1.8);
+    }
+
+    // 5. Catchy Upbeat Melodic Arp
+    const leadFreq = leadPattern[step];
+    if (leadFreq) {
+      const lOsc = audioCtx.createOscillator();
+      const lGain = audioCtx.createGain();
+      lOsc.type = 'triangle';
+      lOsc.frequency.setValueAtTime(leadFreq, now);
+      lGain.gain.setValueAtTime(0.18, now);
+      lGain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 1.4);
+      lOsc.connect(lGain);
+      lGain.connect(bgmGain);
+      lOsc.start(now);
+      lOsc.stop(now + stepTime * 1.4);
+    }
+
+    bgmStep++;
+  }, Math.round(stepTime * 1000));
+}
+
+function stopBGM() {
+  isBgmPlaying = false;
+  if (bgmInterval) {
+    clearInterval(bgmInterval);
+    bgmInterval = null;
   }
 }
 
@@ -423,70 +556,27 @@ function triggerCinematicIntro(forceReplay = false) {
       <div class="loader-bg-glow"></div>
       <div class="loader-stars"></div>
       <div class="cyber-scanlines"></div>
-      <div class="loader-content">
+      <div class="loader-content clean-cinematic-card">
         <div class="engineers-day-ribbon animate-fade-in">
           <span class="eng-icon">⚙️</span>
-          <span>SPECIAL ENGINEERS DAY EDITION</span>
-          <span class="eng-icon">⚡</span>
+          <span>ENGINEERS DAY SPECIAL</span>
         </div>
 
-        <div class="hologram-gear-container animate-fade-in">
-          <svg class="hologram-gear" viewBox="0 0 100 100">
-            <defs>
-              <radialGradient id="reactor-glow-replay" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="1"/>
-                <stop offset="50%" stop-color="#818cf8" stop-opacity="0.8"/>
-                <stop offset="100%" stop-color="#030712" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5" stroke-dasharray="6 4"/>
-            <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(244, 63, 94, 0.35)" stroke-width="1.5"/>
-            <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="2" stroke-dasharray="3 3"/>
-            <path d="M50 10 L53 19 L62 20 L57 28 L63 35 L55 39 L57 48 L48 45 L41 49 L43 40 L35 36 L42 29 L38 21 L47 20 Z" fill="none" stroke="#38bdf8" stroke-width="2"/>
-            <circle cx="50" cy="50" r="14" fill="url(#reactor-glow-replay)" />
-            <circle cx="50" cy="50" r="5" fill="#ffffff" />
-          </svg>
-          <div class="gear-core-pulse"></div>
-        </div>
-
-        <div class="engineers-quote animate-fade-in">
-          "Scientists study the world as it is; Engineers create the world that never has been."
-        </div>
-
-        <div class="creator-reveal">
-          <span class="sub-text">INNOVATED & PRESENTED BY</span>
+        <div class="creator-reveal animate-fade-in">
+          <span class="sub-text">PRESENTED BY</span>
           <h1 class="creator-name animate-glow-text">SHYAM</h1>
-          <span class="creator-branch-badge">🚀 COMPUTING & MATHEMATICAL ENGINEERING</span>
         </div>
 
-        <div class="rope-loader-animation">
-          <div class="rope-track">
-            <div class="rope-line-glow"></div>
-            <div class="knot-pulse"></div>
-          </div>
-        </div>
-
-        <div class="loader-game-title">
-          <span class="mini-tag">QUANTUM ALGORITHM DUEL</span>
+        <div class="loader-game-title animate-fade-in">
           <h2 class="epic-title">TUG OF WAR <span class="math-glow">MATHEMATICS</span></h2>
-        </div>
-
-        <button class="loader-play-sound-btn pulse-glow" id="loader-start-sound-btn">
-          <span class="btn-sound-wave">🔊</span>
-          <span>REPLAY WITH AI VOICE & SOUND</span>
-        </button>
-
-        <div class="sound-cue-pill" id="loader-audio-cue">
-          <span class="sound-wave-icon">🎙️</span>
-          <span>AI VOICE ANNOUNCEMENT + EPIC SOUNDTRACK</span>
         </div>
 
         <div class="loading-bar-wrap">
           <div class="loading-bar-fill" id="loader-fill"></div>
         </div>
-        <span class="loading-status-text" id="loader-status">CALIBRATING QUANTUM ENGINE...</span>
+        <span class="loading-status-text" id="loader-status">STARTING ARENA...</span>
 
-        <button id="btn-skip-intro" class="skip-intro-btn">SKIP ⏭</button>
+        <button id="btn-skip-intro" class="skip-intro-btn">ENTER DUEL ⏭</button>
       </div>
     `;
     document.body.appendChild(tempDiv);
@@ -498,8 +588,6 @@ function triggerCinematicIntro(forceReplay = false) {
   loaderOverlay.classList.remove('fade-out');
   const fillBar = document.getElementById('loader-fill');
   const statusText = document.getElementById('loader-status');
-  const soundBtn = document.getElementById('loader-start-sound-btn');
-  const soundCue = document.getElementById('loader-audio-cue');
   const skipBtn = document.getElementById('btn-skip-intro');
 
   let hasStartedAudio = false;
@@ -511,23 +599,13 @@ function triggerCinematicIntro(forceReplay = false) {
     playCinematicIntroSound();
     speakIntroAnnouncement();
 
-    if (soundBtn) {
-      soundBtn.innerHTML = '<span class="btn-sound-wave">🎶</span><span>AI VOICE & SOUND ACTIVE!</span>';
-      soundBtn.style.pointerEvents = 'none';
-      soundBtn.classList.remove('pulse-glow');
-    }
-    if (soundCue) {
-      soundCue.innerHTML = '<span>✨ QUANTUM ENGINE SYNCHRONIZED</span>';
-    }
-
     // Sync status and progress with audio timeline (~4.8 seconds)
     const milestones = [
-      { p: 15, t: "INITIALIZING QUANTUM COMPUTE MATRIX...", delay: 200 },
-      { p: 35, t: "SYNTHESIZING CYBER ARPEGGIOS & HORN...", delay: 600 },
-      { p: 65, t: "ENGINEERS DAY SPECIAL • INNOVATED BY SHYAM...", delay: 1300 },
-      { p: 85, t: "CALIBRATING MATHEMATICS VECTOR FIELD...", delay: 2600 },
-      { p: 95, t: "TUG OF WAR QUANTUM DUEL READY...", delay: 3400 },
-      { p: 100, t: "WELCOME ENGINEERS! DUEL IS LIVE!", delay: 4400 },
+      { p: 20, t: "INITIALIZING AUDIO ENGINE...", delay: 200 },
+      { p: 45, t: "SYNTHESIZING CYBER ARPEGGIOS...", delay: 600 },
+      { p: 75, t: "PRESENTED BY SHYAM...", delay: 1300 },
+      { p: 90, t: "TUG OF WAR READY...", delay: 2600 },
+      { p: 100, t: "WELCOME TO THE DUEL!", delay: 3800 },
     ];
 
     milestones.forEach(m => {
@@ -537,7 +615,7 @@ function triggerCinematicIntro(forceReplay = false) {
       }, m.delay);
     });
 
-    setTimeout(dismissLoader, 5100);
+    setTimeout(dismissLoader, 4500);
   }
 
   function dismissLoader() {
@@ -545,6 +623,8 @@ function triggerCinematicIntro(forceReplay = false) {
     loaderOverlay.classList.add('fade-out');
     setTimeout(() => {
       loaderOverlay.remove();
+      // Start exciting background battle music!
+      startExcitedBGM();
     }, 850);
   }
 
@@ -570,20 +650,7 @@ function triggerCinematicIntro(forceReplay = false) {
     window.addEventListener(evt, autoUnlockAudio, { capture: true, passive: true });
   });
 
-  if (soundBtn) {
-    soundBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      startSoundSequence();
-    });
-  }
-
-  if (soundCue) {
-    soundCue.addEventListener('click', (e) => {
-      e.stopPropagation();
-      startSoundSequence();
-    });
-  }
-
+  // Clicking anywhere on the loader card or overlay also unlocks audio sequence
   loaderOverlay.addEventListener('click', () => {
     startSoundSequence();
   });
@@ -1007,6 +1074,14 @@ function setupEventListeners() {
     if (masterGain && audioCtx) {
       masterGain.gain.setValueAtTime(isSoundEnabled ? 0.85 : 0, audioCtx.currentTime);
     }
+    if (bgmGain && audioCtx) {
+      bgmGain.gain.setValueAtTime(isSoundEnabled ? 0.22 : 0, audioCtx.currentTime);
+    }
+    if (isSoundEnabled && !isBgmPlaying) {
+      startExcitedBGM();
+    } else if (!isSoundEnabled && isBgmPlaying) {
+      stopBGM();
+    }
   });
 
   // Replay Shyam Cinematic Presentation
@@ -1014,6 +1089,7 @@ function setupEventListeners() {
   if (replayBtn) {
     replayBtn.addEventListener('click', () => {
       initAudio();
+      stopBGM();
       triggerCinematicIntro(true);
     });
   }
