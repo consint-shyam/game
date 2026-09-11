@@ -396,6 +396,42 @@ function playCinematicIntroSound() {
       osc.stop(now + 3.1 + idx * 0.08 + 0.45);
     });
 
+    // 8. Triumphant Engineers Finale Swell (5.2s to 8.2s)
+    const finaleChords = [
+      { f: 293.66, t: 5.2, dur: 2.8, v: 0.18 }, // D4
+      { f: 440.00, t: 5.4, dur: 2.6, v: 0.20 }, // A4
+      { f: 587.33, t: 5.6, dur: 2.4, v: 0.22 }, // D5
+      { f: 739.99, t: 5.8, dur: 2.2, v: 0.24 }, // F#5
+      { f: 880.00, t: 6.0, dur: 2.0, v: 0.26 }, // A5
+      { f: 1174.66, t: 6.2, dur: 2.0, v: 0.28 }, // D6
+    ];
+    finaleChords.forEach(n => {
+      const fOsc = audioCtx.createOscillator();
+      const fGain = audioCtx.createGain();
+      fOsc.type = 'triangle';
+      fOsc.frequency.setValueAtTime(n.f, now + n.t);
+      fGain.gain.setValueAtTime(0.001, now + n.t);
+      fGain.gain.linearRampToValueAtTime(n.v, now + n.t + 0.15);
+      fGain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+      fOsc.connect(fGain);
+      fGain.connect(masterGain);
+      fOsc.start(now + n.t);
+      fOsc.stop(now + n.t + n.dur);
+    });
+
+    // Sub Bass Warmth underneath finale (5.2s - 8.2s)
+    const finSub = audioCtx.createOscillator();
+    const finSubGain = audioCtx.createGain();
+    finSub.type = 'sine';
+    finSub.frequency.setValueAtTime(73.42, now + 5.2);
+    finSub.frequency.exponentialRampToValueAtTime(36.71, now + 8.2);
+    finSubGain.gain.setValueAtTime(0.35, now + 5.2);
+    finSubGain.gain.exponentialRampToValueAtTime(0.001, now + 8.2);
+    finSub.connect(finSubGain);
+    finSubGain.connect(masterGain);
+    finSub.start(now + 5.2);
+    finSub.stop(now + 8.2);
+
   } catch (err) {
     console.warn('Cinematic intro sound error:', err);
   }
@@ -599,13 +635,14 @@ function triggerCinematicIntro(forceReplay = false) {
     playCinematicIntroSound();
     speakIntroAnnouncement();
 
-    // Sync status and progress with audio timeline (~4.8 seconds)
+    // Sync status and progress with extended audio timeline (~8.5 seconds)
     const milestones = [
-      { p: 20, t: "INITIALIZING AUDIO ENGINE...", delay: 200 },
-      { p: 45, t: "SYNTHESIZING CYBER ARPEGGIOS...", delay: 600 },
-      { p: 75, t: "PRESENTED BY SHYAM...", delay: 1300 },
-      { p: 90, t: "TUG OF WAR READY...", delay: 2600 },
-      { p: 100, t: "WELCOME TO THE DUEL!", delay: 3800 },
+      { p: 15, t: "INITIALIZING QUANTUM ARENA...", delay: 500 },
+      { p: 35, t: "PRESENTED BY SHYAM...", delay: 1800 },
+      { p: 60, t: "SYNCHRONIZING MATHEMATICAL MATRIX...", delay: 3600 },
+      { p: 80, t: "ENGINEERS DAY SPECIAL EDITION...", delay: 5400 },
+      { p: 95, t: "CALIBRATING QUANTUM ALGORITHMS...", delay: 6800 },
+      { p: 100, t: "READY TO DUEL! LAUNCHING...", delay: 7800 },
     ];
 
     milestones.forEach(m => {
@@ -615,7 +652,7 @@ function triggerCinematicIntro(forceReplay = false) {
       }, m.delay);
     });
 
-    setTimeout(dismissLoader, 4500);
+    setTimeout(dismissLoader, 8500);
   }
 
   function dismissLoader() {
@@ -666,12 +703,12 @@ function triggerCinematicIntro(forceReplay = false) {
   if (forceReplay) {
     startSoundSequence();
   } else {
-    // If idle after 7 seconds without interaction, smoothly transition
+    // If idle after 11 seconds without interaction, smoothly transition
     cinematicTimer = setTimeout(() => {
       if (!hasStartedAudio) {
         dismissLoader();
       }
-    }, 7000);
+    }, 11000);
   }
 }
 // Floating Ambient Math Formula Particles (Engineers Day Cyber Canvas)
