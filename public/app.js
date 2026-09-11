@@ -55,19 +55,16 @@ function startExcitedBGM() {
   initAudio();
   if (!audioCtx || !bgmGain) return;
 
-  // If audio context is suspended by browser policy, resume and then start loop
+  isBgmPlaying = true;
+
+  // Attempt to resume audio context if suspended
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume().then(() => {
-      startExcitedBGM();
-    }).catch(() => {});
-    return;
+    audioCtx.resume().catch(() => {});
   }
 
   // If already actively looping, don't create duplicate intervals
-  if (isBgmPlaying && bgmInterval) return;
+  if (bgmInterval) return;
 
-  isBgmPlaying = true;
-  if (bgmInterval) clearInterval(bgmInterval);
   bgmStep = 0;
   const stepTime = 60 / 128 / 4; // 16th note at 128 BPM (~117ms)
 
@@ -658,11 +655,6 @@ function triggerCinematicIntro(forceReplay = false) {
           <h2 class="epic-title">TUG OF WAR <span class="math-glow">MATHEMATICS</span></h2>
         </div>
 
-        <button type="button" id="btn-unmute-intro" class="loader-sound-pill animate-fade-in" title="Play with Music">
-          <span class="pill-sound-icon">🔊</span>
-          <span id="loader-sound-label">TAP ANYWHERE FOR MUSIC</span>
-        </button>
-
         <div class="loading-bar-wrap">
           <div class="loading-bar-fill" id="loader-fill"></div>
         </div>
@@ -681,48 +673,28 @@ function triggerCinematicIntro(forceReplay = false) {
   const fillBar = document.getElementById('loader-fill');
   const statusText = document.getElementById('loader-status');
   const skipBtn = document.getElementById('btn-skip-intro');
-  const unmuteBtn = document.getElementById('btn-unmute-intro');
 
-  let hasStartedIntroAudio = false;
+  let hasStartedIntroSound = false;
 
-  function unlockAndStartAudio() {
+  function tryPlayIntroSound() {
     initAudio();
-    const label = document.getElementById('loader-sound-label');
-    const btn = document.getElementById('btn-unmute-intro');
-
-    function executeAudio() {
-      if (label) label.textContent = 'MUSIC & SOUND ACTIVE 🎵';
-      if (btn) btn.classList.add('unmuted');
-      if (!hasStartedIntroAudio) {
-        hasStartedIntroAudio = true;
-        playCinematicIntroSound();
-        speakIntroAnnouncement();
-      }
-      startExcitedBGM();
-    }
-
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().then(() => {
-        executeAudio();
-      }).catch(() => {});
-    } else {
-      executeAudio();
+    if (audioCtx && audioCtx.state === 'running' && !hasStartedIntroSound) {
+      hasStartedIntroSound = true;
+      playCinematicIntroSound();
+      speakIntroAnnouncement();
     }
   }
 
-  function startSoundSequence() {
+  function startPresentationSequence() {
     initAudio();
-    // If audio is already allowed, play audio immediately
-    if (audioCtx && audioCtx.state === 'running') {
-      unlockAndStartAudio();
-    }
+    tryPlayIntroSound();
 
-    // Sync status and progress with extended timeline (~8.5 seconds)
+    // Progress milestone timeline (~8.5 seconds)
     const milestones = [
-      { p: 15, t: "INITIALIZING QUANTUM ARENA...", delay: 500 },
-      { p: 35, t: "PRESENTED BY SHYAM...", delay: 1800 },
-      { p: 60, t: "SYNCHRONIZING MATHEMATICAL MATRIX...", delay: 3600 },
-      { p: 80, t: "ENGINEERS DAY SPECIAL EDITION...", delay: 5400 },
+      { p: 15, t: "INITIALIZING QUANTUM ARENA...", delay: 400 },
+      { p: 35, t: "PRESENTED BY SHYAM...", delay: 1600 },
+      { p: 60, t: "SYNCHRONIZING MATHEMATICAL MATRIX...", delay: 3400 },
+      { p: 80, t: "ENGINEERS DAY SPECIAL EDITION...", delay: 5200 },
       { p: 95, t: "CALIBRATING QUANTUM ALGORITHMS...", delay: 6800 },
       { p: 100, t: "READY TO DUEL! LAUNCHING...", delay: 7800 },
     ];
@@ -734,57 +706,47 @@ function triggerCinematicIntro(forceReplay = false) {
       }, m.delay);
     });
 
-    setTimeout(dismissLoader, 8500);
+    // Auto-dismiss presentation loader and transition directly to excited background music
+    cinematicTimer = setTimeout(dismissLoader, 8500);
   }
 
   function dismissLoader() {
     if (cinematicTimer) clearTimeout(cinematicTimer);
     loaderOverlay.classList.add('fade-out');
     setTimeout(() => {
-      loaderOverlay.remove();
-      // Ensure excited background battle music plays!
+      if (loaderOverlay && loaderOverlay.parentNode) {
+        loaderOverlay.remove();
+      }
+      // Play excited battle music automatically right after presentation loader!
       startExcitedBGM();
-    }, 850);
+    }, 500);
   }
 
-  // Automatically start visual & audio sequence
-  startSoundSequence();
+  // Start presentation sequence automatically
+  startPresentationSequence();
 
-  // Instant unlock on unmute button or anywhere on card
-  if (unmuteBtn) {
-    unmuteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      unlockAndStartAudio();
-    });
-  }
-
-  loaderOverlay.addEventListener('click', () => {
-    unlockAndStartAudio();
+  // If user touches or clicks anywhere on screen, prime the audio context silently
+  const primeAudioContext = () => {
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => {
+        tryPlayIntroSound();
+      }).catch(() => {});
+    }
+  };
+  ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, primeAudioContext, { once: true, passive: true });
   });
-
-  const gestureEvents = ['pointerdown', 'touchstart', 'mousedown', 'keydown'];
-  function onFirstLoaderGesture() {
-    unlockAndStartAudio();
-    gestureEvents.forEach(evt => window.removeEventListener(evt, onFirstLoaderGesture, { capture: true }));
-  }
-  gestureEvents.forEach(evt => window.addEventListener(evt, onFirstLoaderGesture, { capture: true, passive: true }));
 
   if (skipBtn) {
     skipBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      unlockAndStartAudio();
+      initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
       dismissLoader();
     });
-  }
-
-  // If force replay, start sound immediately
-  if (forceReplay) {
-    unlockAndStartAudio();
-  } else {
-    // If idle after 11 seconds without interaction, smoothly transition
-    cinematicTimer = setTimeout(() => {
-      dismissLoader();
-    }, 11000);
   }
 }
 // Floating Ambient Math Formula Particles (Engineers Day Cyber Canvas)
@@ -1215,12 +1177,16 @@ function setupEventListeners() {
     initAudio();
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume().then(() => {
-        if (isSoundEnabled && !isBgmPlaying) {
+        const loader = document.getElementById('cinematic-loader');
+        if (!loader && isSoundEnabled && !isBgmPlaying) {
           startExcitedBGM();
         }
       }).catch(() => {});
     } else if (isSoundEnabled && !isBgmPlaying) {
-      startExcitedBGM();
+      const loader = document.getElementById('cinematic-loader');
+      if (!loader) {
+        startExcitedBGM();
+      }
     }
   };
   ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
