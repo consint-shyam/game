@@ -1166,3 +1166,264 @@ body {
     font-size: 0.8rem;
   }
 }
+
+/* ==========================================================================
+   JABARDAST CINEMATIC INTRO LOADER (PRESENTED BY SHYAM)
+   ========================================================================== */
+.cinematic-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: radial-gradient(circle at center, #0a0f1d 0%, #030712 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.8s cubic-bezier(0.85, 0, 0.15, 1), visibility 0.8s;
+}
+
+.cinematic-loader-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader-bg-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(239, 68, 68, 0.15) 50%, transparent 70%);
+  filter: blur(80px);
+  animation: pulseGlow 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.loader-stars {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 140px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 150px 70px, #60a5fa, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 240px 190px, #f87171, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 300px 300px;
+  opacity: 0.5;
+  animation: driftStars 20s linear infinite;
+  pointer-events: none;
+}
+
+.loader-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 90%;
+  width: 650px;
+  padding: 2rem;
+}
+
+.present-tag {
+  font-family: var(--font-mono);
+  font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: #94a3b8;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: cinematicFadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards;
+}
+
+.creator-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.creator-reveal .sub-text {
+  font-family: var(--font-mono);
+  font-size: clamp(0.8rem, 2vw, 1.1rem);
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: #cbd5e1;
+  opacity: 0;
+  transform: scale(0.9);
+  animation: cinematicFadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s forwards;
+}
+
+.creator-name {
+  font-size: clamp(3rem, 10vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: clamp(6px, 2vw, 14px);
+  background: linear-gradient(135deg, #ffffff 0%, #60a5fa 50%, #f43f5e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 35px rgba(96, 165, 250, 0.6);
+  opacity: 0;
+  transform: scale(0.85);
+  animation: epicZoomIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards, glowPulse 2s ease-in-out 2.4s infinite alternate;
+  margin: 0.5rem 0;
+}
+
+.rope-loader-animation {
+  width: 100%;
+  max-width: 380px;
+  margin: 1.5rem 0;
+  opacity: 0;
+  animation: cinematicFadeIn 1s ease 1.6s forwards;
+}
+
+.rope-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: visible;
+}
+
+.rope-line-glow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(90deg, #2563eb, #fbbf24, #dc2626);
+  border-radius: 3px;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+}
+
+.knot-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e11d48;
+  border: 3px solid #fbbf24;
+  box-shadow: 0 0 18px #e11d48, 0 0 30px #fbbf24;
+  animation: knotTug 1.5s ease-in-out infinite alternate;
+}
+
+.loader-game-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+  opacity: 0;
+  animation: cinematicFadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 1.9s forwards;
+}
+
+.mini-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 4px;
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.epic-title {
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #f8fafc;
+  margin-top: 0.2rem;
+}
+
+.epic-title .math-glow {
+  color: #38bdf8;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+}
+
+.loading-bar-wrap {
+  width: 100%;
+  max-width: 260px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 2rem;
+  overflow: hidden;
+  opacity: 0;
+  animation: cinematicFadeIn 0.8s ease 2.2s forwards;
+}
+
+.loading-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8, #fb7185);
+  border-radius: 2px;
+  box-shadow: 0 0 10px #38bdf8;
+  transition: width 0.15s ease;
+}
+
+.loading-status-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #64748b;
+  margin-top: 0.75rem;
+  opacity: 0;
+  animation: cinematicFadeIn 0.8s ease 2.3s forwards;
+}
+
+.skip-intro-btn {
+  margin-top: 1.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  animation: cinematicFadeIn 0.8s ease 1.5s forwards;
+}
+
+.skip-intro-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+@keyframes cinematicFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes epicZoomIn {
+  0% { opacity: 0; transform: scale(0.65) translateY(15px); filter: blur(8px); }
+  70% { opacity: 1; transform: scale(1.06); filter: blur(0px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0px); }
+}
+
+@keyframes glowPulse {
+  0% { text-shadow: 0 0 25px rgba(96, 165, 250, 0.5); }
+  50% { text-shadow: 0 0 45px rgba(244, 63, 94, 0.8), 0 0 20px rgba(251, 191, 36, 0.6); }
+  100% { text-shadow: 0 0 30px rgba(96, 165, 250, 0.7); }
+}
+
+@keyframes knotTug {
+  0% { transform: translate(calc(-50% - 30px), -50%); }
+  100% { transform: translate(calc(-50% + 30px), -50%); }
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes driftStars {
+  0% { background-position: 0 0; }
+  100% { background-position: 300px 600px; }
+}

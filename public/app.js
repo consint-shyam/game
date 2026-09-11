@@ -127,10 +127,52 @@ const modalGameOver = document.getElementById('modal-game-over');
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
+  initCinematicLoader();
   setupSocket();
   setupEventListeners();
   fetchServerInfo();
 });
+
+// Cinematic Presentation Loader Logic (Presented By Shyam)
+function initCinematicLoader() {
+  const loaderOverlay = document.getElementById('cinematic-loader');
+  const fillBar = document.getElementById('loader-fill');
+  const statusText = document.getElementById('loader-status');
+  const skipBtn = document.getElementById('btn-skip-intro');
+  if (!loaderOverlay) return;
+
+  const statuses = [
+    { p: 20, t: "INITIALIZING AUDIO ENGINE..." },
+    { p: 45, t: "CONNECTING TO MULTIPLAYER CORE..." },
+    { p: 70, t: "SYNCING MATHEMATICS ARENA..." },
+    { p: 90, t: "PRESENTED BY SHYAM..." },
+    { p: 100, t: "READY FOR DUEL!" }
+  ];
+
+  let currentStep = 0;
+  const interval = setInterval(() => {
+    if (currentStep < statuses.length) {
+      if (fillBar) fillBar.style.width = statuses[currentStep].p + '%';
+      if (statusText) statusText.textContent = statuses[currentStep].t;
+      currentStep++;
+    } else {
+      clearInterval(interval);
+      setTimeout(dismissLoader, 600);
+    }
+  }, 600);
+
+  function dismissLoader() {
+    clearInterval(interval);
+    loaderOverlay.classList.add('fade-out');
+    setTimeout(() => {
+      loaderOverlay.remove();
+    }, 850);
+  }
+
+  if (skipBtn) {
+    skipBtn.addEventListener('click', dismissLoader);
+  }
+}
 
 // Fetch Server IP & Origin URL for QR Code Display
 function fetchServerInfo() {
